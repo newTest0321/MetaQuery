@@ -1,86 +1,73 @@
 'use client';
-
-import { useState } from "react";
-import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import "./styles/home.css"; // Keep styles in CSS for keyframe animation
 
 export default function Home() {
-  const [bucketName, setBucketName] = useState("");
-  const [publicUrl, setPublicUrl] = useState("");
-  const [contents, setContents] = useState([]);
-  const [error, setError] = useState("");
+  const phrases = ["Seamless Insights, One Query Away", "Your Data, Your Way", "See Beyond Tables"];
+  const [text, setText] = useState("");
+  const [index, setIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleListFiles = async () => {
-    try {
-      let response;
-
-      if (bucketName) {
-        // Call API to list files from an S3 bucket
-        response = await axios.get(`http://localhost:8000/list-bucket?bucket_name=${bucketName}`);
-      } else if (publicUrl) {
-        // Call API to list files from a public S3 URL
-        response = await axios.get(`http://localhost:8000/list-public-bucket?public_url=${publicUrl}`);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (charIndex < phrases[index].length) {
+          setText((prev) => prev + phrases[index][charIndex]);
+          setCharIndex(charIndex + 1);
+        } else {
+          setIsDeleting(true);
+        }
       } else {
-        setError("Please enter either an S3 bucket name or a public URL.");
-        return;
+        if (charIndex > 0) {
+          setText((prev) => prev.slice(0, -1));
+          setCharIndex(charIndex - 1);
+        } else {
+          setIsDeleting(false);
+          setIndex((prevIndex) => (prevIndex + 1) % phrases.length);
+        }
       }
+    }, isDeleting ? 100 : 150);
 
-      setContents(response.data);
-      setError("");
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      setError("Failed to fetch files. Please check the input and try again.");
-      setContents([]);
-    }
-  };
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting, index]);
 
   return (
-    <div className="container mt-5">
-      <h2>MetaQuery - S3 Bucket Viewer</h2>
+    <div className="relative h-screen w-full flex flex-col items-center justify-center text-white text-center px-5 overflow-hidden home-container">
+      {/* Background Animation (Unified with Navbar) */}
+      <div className="absolute inset-0 animated-bg"></div>
 
-      {/* Input for S3 Bucket Name */}
-      <div className="mb-3">
-        <label className="form-label">Enter S3 Bucket Name</label>
-        <input
-          type="text"
-          className="form-control"
-          value={bucketName}
-          onChange={(e) => setBucketName(e.target.value)}
-          placeholder="e.g., meta-query-init"
-        />
-      </div>
-
-      {/* Input for Public S3 URL */}
-      <div className="mb-3">
-        <label className="form-label">Enter Public S3 URL</label>
-        <input
-          type="text"
-          className="form-control"
-          value={publicUrl}
-          onChange={(e) => setPublicUrl(e.target.value)}
-          placeholder="e.g., https://s3.eu-north-1.amazonaws.com/meta-query-init"
-        />
-      </div>
-
-      {/* Submit button */}
-      <button className="btn btn-primary" onClick={handleListFiles}>List Files</button>
-
-      {/* Error Message */}
-      {error && <div className="alert alert-danger mt-3">{error}</div>}
-
-      {/* Display File List */}
-      {contents.length > 0 && (
-        <div className="mt-4">
-          <h4>Files & Folders</h4>
-          <ul className="list-group">
-            {contents.map((file, index) => (
-              <li key={index} className="list-group-item">
-                {file.Key}
-              </li>
-            ))}
-          </ul>
+      {/* Navbar with Animated Background */}
+      <nav className="fixed top-0 left-0 w-full px-5 py-3 flex justify-between items-center shadow-lg z-10 bg-transparent backdrop-blur-md animated-bg">
+        <Link href="/" className="font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">
+          MetaQuery
+        </Link>
+        <div className="flex space-x-4 md:space-x-6 items-center">
+          <Link href="/docs" className="hover:underline">Docs</Link>
+          <Link href="/about" className="hover:underline">About Us</Link>
+          <Link href="/solutions" className="hover:underline">Solutions</Link>
+          <Link href="/signup" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-transform transform hover:scale-105">
+            Sign Up
+          </Link>
+          <Link href="/login" className="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg shadow-md transition-transform transform hover:scale-105">
+            Login
+          </Link>
         </div>
-      )}
+      </nav>
+
+      {/* Animated Text */}
+      <h1 className="relative z-10 text-3xl md:text-6xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent mt-24 md:mt-32 min-h-[80px] drop-shadow-lg">
+        {text}
+      </h1>
+
+      <p className="relative z-10 mt-4 text-lg text-gray-300 max-w-2xl">
+        Explore and analyze your data effortlessly with our powerful querying and metadata tools.
+      </p>
+
+      <Link href="/files" className="relative z-10 mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg shadow-md transition-transform transform hover:scale-110">
+        Get Started
+      </Link>
     </div>
   );
 }

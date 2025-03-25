@@ -1,0 +1,17 @@
+/* Unified Animated Background - Darker Version */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.animated-bg {
+    background: linear-gradient(-45deg, #050c18, #0b1725, #192b3d, #122536);
+    background-size: 400% 400%;
+    animation: gradientAnimation 10s ease infinite;
+}
+  
+/* Gradient Background Animation */
+@keyframes gradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
