@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import "./styles/home.css"; // Keep styles in CSS for keyframe animation
+import "./styles/home.css"; 
 
 export default function Home() {
   const phrases = ["Seamless Insights, One Query Away", "Your Data, Your Way", "See Beyond Tables"];
@@ -9,6 +9,7 @@ export default function Home() {
   const [index, setIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [delay, setDelay] = useState(125); // Typing speed
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -18,20 +19,23 @@ export default function Home() {
           setCharIndex(charIndex + 1);
         } else {
           setIsDeleting(true);
+          setDelay(1000); // Wait 1 seconds before erasing
         }
       } else {
+        setDelay(50); // Speed up deleting
         if (charIndex > 0) {
           setText((prev) => prev.slice(0, -1));
           setCharIndex(charIndex - 1);
         } else {
           setIsDeleting(false);
+          setDelay(125); // Reset to normal typing speed
           setIndex((prevIndex) => (prevIndex + 1) % phrases.length);
         }
       }
-    }, isDeleting ? 100 : 150);
+    }, delay);
 
     return () => clearTimeout(timeout);
-  }, [charIndex, isDeleting, index]);
+  }, [charIndex, isDeleting, index, delay]);
 
   return (
     <div className="relative h-screen w-full flex flex-col items-center justify-center text-white text-center px-5 overflow-hidden home-container">
@@ -62,7 +66,7 @@ export default function Home() {
       </h1>
 
       <p className="relative z-10 mt-4 text-lg text-gray-300 max-w-2xl">
-        Explore and analyze your data effortlessly with our powerful querying and metadata tools.
+      Unify your data experience - explore, analyze, and query Iceberg, Hudi, and Delta effortlessly in one seamless platform
       </p>
 
       <Link href="/files" className="relative z-10 mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg shadow-md transition-transform transform hover:scale-110">
