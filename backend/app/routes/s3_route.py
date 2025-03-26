@@ -1,24 +1,10 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, HTTPException
 import boto3
 import os
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 
-load_dotenv()
+s3_router = APIRouter(prefix="/s3", tags=["S3 Storage"])
 
-app = FastAPI()
-
-# Allow CORS for frontend requests
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Change "*" to ["http://localhost:3000"] in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# AWS S3 Client Configuration
 AWS_REGION = "eu-north-1"
 s3 = boto3.client(
     "s3",
@@ -27,8 +13,7 @@ s3 = boto3.client(
     region_name=AWS_REGION,
 )
 
-# Using Bucket Path
-@app.get("/list-bucket")
+@s3_router.get("/list-bucket")
 async def list_bucket_contents(bucket_name: str):
     try:
         response = s3.list_objects_v2(Bucket=bucket_name)
@@ -37,12 +22,11 @@ async def list_bucket_contents(bucket_name: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error listing bucket: {str(e)}")
 
-# Using Bucket Pubic URL
-@app.get("/list-public-bucket")
+@s3_router.get("/list-public-bucket")
 async def list_public_bucket(public_url: str):
     try:
         parsed_url = urlparse(public_url)
-        bucket_name = parsed_url.netloc.split(".")[0]  # Extract bucket name from public URL
+        bucket_name = parsed_url.netloc.split(".")[0]
 
         response = s3.list_objects_v2(Bucket=bucket_name)
         contents = response.get("Contents", [])
