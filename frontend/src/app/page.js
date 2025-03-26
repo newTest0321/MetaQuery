@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import "./styles/home.css";
+import "../styles/home.css";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
