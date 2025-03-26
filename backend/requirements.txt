@@ -2,6 +2,7 @@ fastapi
 boto3
 uvicorn
 pymongo[ssl]
+pydantic[email]
 python-dotenv
 bcrypt
 jwt 
