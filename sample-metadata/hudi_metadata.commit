@@ -1,0 +1,18 @@
+{
+  "commitTime": "2025-03-25T12:00:00Z",
+  "operation": "upsert",
+  "totalFilesAdded": 3,
+  "totalFilesUpdated": 5,
+  "totalRecordsWritten": 50000,
+  "metadata": {
+    "schema": {
+      "columns": [
+        {"name": "id", "type": "STRING"},
+        {"name": "name", "type": "STRING"},
+        {"name": "updated_at", "type": "TIMESTAMP"}
+      ]
+    },
+    "partitionColumns": ["updated_at"],
+    "tableType": "COPY_ON_WRITE"
+  }
+}

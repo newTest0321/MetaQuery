@@ -1,0 +1,22 @@
+{
+    "protocol": {
+      "minReaderVersion": 1,
+      "minWriterVersion": 2
+    },
+    "metaData": {
+      "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "format": "parquet",
+      "schemaString": "{\"type\":\"struct\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"integer\"}]}",
+      "partitionColumns": [],
+      "configuration": {"delta.appendOnly": "true"}
+    },
+    "add": [
+      {
+        "path": "part-00001.snappy.parquet",
+        "size": 45678,
+        "modificationTime": 1711382400000,
+        "stats": "{\"numRecords\":1000,\"minValues\":{\"value\":1},\"maxValues\":{\"value\":1000}}"
+      }
+    ]
+  }
+  
