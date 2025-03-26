@@ -1,0 +1,91 @@
+{
+    "format": "Parquet",
+    "tables": [
+      {
+        "table": "orders",
+        "location": "s3://ecommerce-bucket/data/orders/",
+        "schema": {
+          "columns": [
+            { "name": "order_id", "type": "STRING", "nullable": false },
+            { "name": "customer_id", "type": "STRING", "nullable": false },
+            { "name": "product_id", "type": "STRING", "nullable": false },
+            { "name": "order_date", "type": "TIMESTAMP", "nullable": false },
+            { "name": "quantity", "type": "INTEGER", "nullable": false },
+            { "name": "price", "type": "DOUBLE", "nullable": false },
+            {
+              "name": "status",
+              "type": "STRING",
+              "nullable": true,
+              "enum": ["Pending", "Shipped", "Delivered", "Cancelled"]
+            }
+          ]
+        },
+        "partitioning": [{ "column": "order_date", "type": "DATE" }],
+        "files": [
+          {
+            "file": "s3://ecommerce-bucket/data/orders/orders_2025-03-25.parquet",
+            "size": 15000000,
+            "row_count": 100000,
+            "min_values": { "order_date": "2025-03-25T00:00:00Z", "price": 5.0 },
+            "max_values": { "order_date": "2025-03-25T23:59:59Z", "price": 999.99 },
+            "null_counts": { "status": 500 }
+          }
+        ]
+      },
+      {
+        "table": "customers",
+        "location": "s3://ecommerce-bucket/data/customers/",
+        "schema": {
+          "columns": [
+            { "name": "customer_id", "type": "STRING", "nullable": false },
+            { "name": "name", "type": "STRING", "nullable": false },
+            { "name": "email", "type": "STRING", "nullable": false },
+            { "name": "phone", "type": "STRING", "nullable": true },
+            { "name": "signup_date", "type": "TIMESTAMP", "nullable": false },
+            { "name": "last_login", "type": "TIMESTAMP", "nullable": true }
+          ]
+        },
+        "files": [
+          {
+            "file": "s3://ecommerce-bucket/data/customers/customers_2025-03-25.parquet",
+            "size": 8000000,
+            "row_count": 50000,
+            "min_values": { "signup_date": "2022-01-01T00:00:00Z" },
+            "max_values": { "signup_date": "2025-03-25T23:59:59Z" },
+            "null_counts": { "phone": 5000 }
+          }
+        ]
+      },
+      {
+        "table": "products",
+        "location": "s3://ecommerce-bucket/data/products/",
+        "schema": {
+          "columns": [
+            { "name": "product_id", "type": "STRING", "nullable": false },
+            { "name": "name", "type": "STRING", "nullable": false },
+            { "name": "category", "type": "STRING", "nullable": false },
+            { "name": "price", "type": "DOUBLE", "nullable": false },
+            { "name": "stock", "type": "INTEGER", "nullable": false },
+            { "name": "last_updated", "type": "TIMESTAMP", "nullable": true }
+          ]
+        },
+        "files": [
+          {
+            "file": "s3://ecommerce-bucket/data/products/products_2025-03-25.parquet",
+            "size": 5000000,
+            "row_count": 10000,
+            "min_values": { "price": 1.0 },
+            "max_values": { "price": 5000.0 },
+            "null_counts": { "last_updated": 2000 }
+          }
+        ]
+      }
+    ],
+    "statistics": {
+      "total_rows": 10060000,
+      "total_size": 1523000000,
+      "distinct_customers": 500000,
+      "most_frequent_status": "Delivered"
+    }
+  }
+  
