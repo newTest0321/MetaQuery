@@ -1,6 +1,9 @@
-import React from "react";
-import { Search, Database, Settings, FileText } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Database, Settings, FileText, LogOut } from "lucide-react";
+import { isAuthenticated } from "@/utils/auth";  // Ensure you have an authentication utility
 
 const userEmail = "zendijkstra@fearlessmails.com";
 
@@ -22,21 +25,33 @@ const projects = [
 ];
 
 export default function Dashboard() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push("/login");
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       {/* Sidebar */}
       <aside className="w-64 p-4 border-r border-gray-700">
-        {/* Top Section with Neon & User Email in Same Line */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-extrabold font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">MetaQuery</h1>
+          <h1 className="text-xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">
+            MetaQuery
+          </h1>
         </div>
 
-        {/* Single Horizontal Line from Sidebar to Main Screen */}
         <hr className="border-gray-600 mb-4 w-[calc(100vw-2rem)] absolute left-0" />
 
         {/* Navigation */}
         <nav className="mt-10">
-          {/* Boxed Search Bar with Proper Alignment */}
           <button className="w-full flex items-center gap-2 bg-gray-800 p-2 rounded border border-gray-600 hover:bg-gray-700">
             <Search size={16} className="text-gray-400" />
             <span className="text-gray-300 flex-1 text-left">Search</span>
@@ -55,19 +70,23 @@ export default function Dashboard() {
             </li>
           </ul>
         </nav>
+
+        {/* Logout Button */}
+        <button 
+          onClick={handleLogout}
+          className="absolute bottom-4 left-4 flex items-center gap-2 bg-red-600 px-4 py-2 rounded text-white hover:bg-red-500">
+          <LogOut size={16} />
+          Logout
+        </button>
       </aside>
-
-
 
       {/* Main Content */}
       <main className="flex-1 p-6">
-        {/* Header Section with User Email at Top Right */}
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-semibold"></h1>
           <span className="text-sm text-gray-300">{userEmail}</span>
         </div>
 
-        {/* Search and Your Projects in One Line */}
         <div className="flex justify-between items-center mt-10">
           <h2 className="text-2xl font-semibold">Your Projects</h2>
           <Link href="/session">
@@ -77,7 +96,6 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Account Usage */}
         <div className="grid grid-cols-4 gap-4 mt-6">
           {[
             { label: "Storage", value: "0.06 / 0.5 GB" },
@@ -92,7 +110,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Project Table */}
         <div className="mt-6 bg-gray-800 p-4 rounded border border-gray-700">
           <table className="w-full text-left">
             <thead>
