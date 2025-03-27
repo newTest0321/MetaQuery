@@ -8,3 +8,4 @@ bcrypt
 jwt 
 motor
 passlib
+pyjwt

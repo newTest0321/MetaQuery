@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/utils/auth"; 
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -16,6 +18,14 @@ export default function S3Viewer() {
   const [fileType, setFileType] = useState(null);
   const viewerRef = useRef(null);
   const [viewerHeight, setViewerHeight] = useState("500px");
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push("/login");
+    }
+  }, []);
 
   useEffect(() => {
     const updateViewerHeight = () => {
@@ -97,11 +107,10 @@ export default function S3Viewer() {
           />
         </div>
         <button
-          className={`w-full p-3 rounded-lg font-semibold text-lg cursor-pointer transform transition-all duration-300 ${
-            publicUrl
+          className={`w-full p-3 rounded-lg font-semibold text-lg cursor-pointer transform transition-all duration-300 ${publicUrl
               ? "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 hover:scale-105"
               : "bg-gray-700 cursor-not-allowed"
-          }`}
+            }`}
           onClick={() => handleListFiles("")}
           disabled={!publicUrl}
         >
