@@ -27,6 +27,10 @@ export function LoginForm({ className, ...props }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "Login failed");
 
+      // Store token and user data in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+
       console.log("Login successful:", data);
       router.push("/dashboard");
     } catch (err) {

@@ -1,5 +1,6 @@
-import { GalleryVerticalEnd } from "lucide-react";
+"use client";
 
+import { GalleryVerticalEnd } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {
@@ -7,8 +8,6 @@ export default function LoginPage() {
     <div className="static-bg text-white w-screen h-screen flex items-center justify-center">
       <div className="grid w-full h-full lg:grid-cols-2 shadow-lg bg-opacity-90 bg-gray-900 backdrop-blur-md">
         
-
-    
         {/* Right Section - Full Height Background Image */}
         <div className="relative hidden lg:block">
           <img
@@ -31,14 +30,13 @@ export default function LoginPage() {
             </a>
           </div>
 
-          {/* Signup Form */}
+          {/* Login Form */}
           <div className="flex flex-1 items-center justify-center">
             <div className="w-full max-w-xs">
               <LoginForm />
             </div>
           </div>
         </div>
-        
       </div>
     </div>
   );
