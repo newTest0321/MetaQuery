@@ -52,3 +52,27 @@ async def get_file(public_url: str, file_key: str):
             return {"file_key": file_key, "type": "binary"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching file: {str(e)}")
+
+# 🆕 NEW: Fetch Metadata (Schema, Partitions, Snapshots)
+@s3_router.get("/get-metadata")
+async def get_metadata(public_url: str, file_key: str):
+    try:
+        parsed_url = urlparse(public_url)
+        bucket_name = parsed_url.netloc.split(".")[0]
+
+        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
+        # Get metadata object (assuming JSON format)
+        metadata_key = file_key.replace(".parquet", "_metadata.json")
+        response = s3.get_object(Bucket=bucket_name, Key=metadata_key)
+        metadata_content = response["Body"].read().decode("utf-8")
+        metadata_json = json.loads(metadata_content)
+
+        schema = metadata_json.get("schema", [])
+        partitions = metadata_json.get("partitions", [])
+        snapshots = metadata_json.get("snapshots", [])
+
+        return {"schema": schema, "partitions": partitions, "snapshots": snapshots}
+
+    except Exception as e:
+        return {"schema": [], "partitions": [], "snapshots": []}
