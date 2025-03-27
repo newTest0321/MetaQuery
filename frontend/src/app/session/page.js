@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ReactJson from "react-json-view";
+import dynamic from "next/dynamic";
 
 export default function S3Viewer() {
   const [publicUrl, setPublicUrl] = useState("");
@@ -13,6 +14,8 @@ export default function S3Viewer() {
   const [fileType, setFileType] = useState(null);
   const viewerRef = useRef(null);
   const [viewerHeight, setViewerHeight] = useState("500px");
+
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
   useEffect(() => {
     // Function to dynamically update height based on container size
@@ -79,7 +82,9 @@ export default function S3Viewer() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-900 text-white">
       {/* Sidebar */}
       <div className="w-full md:w-1/4 h-auto md:h-screen p-6 overflow-y-auto bg-gray-950 border-r border-gray-700">
-        <h2 className="text-2xl font-bold mb-4">S3 Viewer</h2>
+
+        <h1 className="text-3xl font-extrabold font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">MetaQuery</h1>
+        <p className="text-2xl mt-10 font-bold mb-4">S3 Viewer</p>
 
         {/* Input Field */}
         <div className="mb-4">
@@ -93,7 +98,7 @@ export default function S3Viewer() {
           />
         </div>
         <button
-          className="w-full p-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-semibold text-lg"
+          className="w-full p-3 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all duration-300 rounded-lg font-semibold text-lg cursor-pointer transform hover:scale-105"
           onClick={() => handleListFiles("")}
         >
           List Files
@@ -103,10 +108,10 @@ export default function S3Viewer() {
         <div className="mt-6">
           {currentPath && (
             <button
-              className="text-sm text-gray-400 underline mb-3 block"
+              className="text-sm text-gray-400 mb-3 block cursor-pointer hover:text-gray-200 transition-all duration-300"
               onClick={() => handleListFiles("")}
             >
-              ← Back to Root
+              ← Back
             </button>
           )}
           <div className="space-y-3">
