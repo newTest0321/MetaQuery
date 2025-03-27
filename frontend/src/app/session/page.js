@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/utils/auth"; 
+
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function S3Viewer() {
   const [publicUrl, setPublicUrl] = useState("");
@@ -15,8 +20,6 @@ export default function S3Viewer() {
   const [sessionName, setSessionName] = useState("");
   const [savedSessions, setSavedSessions] = useState([]);
 
-  const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
-
   useEffect(() => {
     localStorage.removeItem("savedSession");
     setPublicUrl("");
@@ -26,6 +29,25 @@ export default function S3Viewer() {
     setSavedSessions(storedSessions);
   }, []);
 
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push("/login");
+    }
+  }, []);
+
+  useEffect(() => {
+    const updateViewerHeight = () => {
+      if (viewerRef.current) {
+        setViewerHeight(`${viewerRef.current.clientHeight - 20}px`);
+      }
+    };
+    updateViewerHeight();
+    window.addEventListener("resize", updateViewerHeight);
+    return () => window.removeEventListener("resize", updateViewerHeight);
+  }, [fileContent]);
+  
   const handleListFiles = async (folder = "") => {
     if (!publicUrl) return;
     try {
@@ -99,6 +121,7 @@ export default function S3Viewer() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-900 text-white">
       {/* Sidebar */}
       <div className="w-full md:w-1/4 h-auto md:h-screen p-6 overflow-y-auto bg-gray-950 border-r border-gray-700">
+
         <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">
           MetaQuery
         </h1>
@@ -125,7 +148,9 @@ export default function S3Viewer() {
         {/* List Files Button */}
         <button
           className="w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+
           onClick={() => handleListFiles("")}
+          disabled={!publicUrl}
         >
           List Files
         </button>
@@ -192,12 +217,14 @@ export default function S3Viewer() {
       </div>
 
       {/* File Viewer Panel */}
+
       <div className="w-full md:w-3/4 h-auto md:h-screen p-6 overflow-y-auto">
         {fileContent ? (
           fileType === "json" ? (
             <ReactJson src={fileContent} theme="monokai" collapsed={2} displayDataTypes={false} />
           ) : (
             <pre className="text-white text-sm whitespace-pre-wrap break-words">{fileContent}</pre>
+
           )
         ) : (
           <div className="text-gray-400 text-lg">Select a file to view its contents.</div>
@@ -222,6 +249,7 @@ export default function S3Viewer() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
