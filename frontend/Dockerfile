@@ -6,6 +6,8 @@ WORKDIR /app
 # Copy package.json and install dependencies
 COPY package.json package-lock.json ./ 
 RUN npm install
+RUN npm install react-json-view --legacy-peer-deps
+
 
 # Copy the entire project (including `src/` directory)
 COPY . . 

@@ -89,9 +89,11 @@ export default function Dashboard() {
 
         <div className="flex justify-between items-center mt-10">
           <h2 className="text-2xl font-semibold">Your Projects</h2>
-          <button className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">
-            New Project
-          </button>
+          <Link href="/session">
+            <button className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">
+              New Project
+            </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-4 gap-4 mt-6">
