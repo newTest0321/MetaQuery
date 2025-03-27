@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import ReactJson from "react-json-view";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function S3Viewer() {
   const [publicUrl, setPublicUrl] = useState("");
@@ -15,16 +17,12 @@ export default function S3Viewer() {
   const viewerRef = useRef(null);
   const [viewerHeight, setViewerHeight] = useState("500px");
 
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
-
   useEffect(() => {
-    // Function to dynamically update height based on container size
     const updateViewerHeight = () => {
       if (viewerRef.current) {
         setViewerHeight(`${viewerRef.current.clientHeight - 20}px`);
       }
     };
-
     updateViewerHeight();
     window.addEventListener("resize", updateViewerHeight);
     return () => window.removeEventListener("resize", updateViewerHeight);
@@ -82,8 +80,9 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-900 text-white">
       {/* Sidebar */}
       <div className="w-full md:w-1/4 h-auto md:h-screen p-6 overflow-y-auto bg-gray-950 border-r border-gray-700">
-
-        <h1 className="text-3xl font-extrabold font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide">MetaQuery</h1>
+        <Link href="/dashboard">
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-wide cursor-pointer">MetaQuery</h1>
+        </Link>
         <p className="text-2xl mt-10 font-bold mb-4">S3 Viewer</p>
 
         {/* Input Field */}
@@ -98,8 +97,13 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
           />
         </div>
         <button
-          className="w-full p-3 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all duration-300 rounded-lg font-semibold text-lg cursor-pointer transform hover:scale-105"
+          className={`w-full p-3 rounded-lg font-semibold text-lg cursor-pointer transform transition-all duration-300 ${
+            publicUrl
+              ? "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 hover:scale-105"
+              : "bg-gray-700 cursor-not-allowed"
+          }`}
           onClick={() => handleListFiles("")}
+          disabled={!publicUrl}
         >
           List Files
         </button>
@@ -138,7 +142,6 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
       </div>
 
       {/* File Viewer Panel */}
-      {/* File Viewer Panel */}
       <div ref={viewerRef} className="w-full md:w-3/4 h-auto md:h-screen p-6 overflow-y-auto bg-black-800">
         {fileContent ? (
           fileType === "json" ? (
@@ -148,19 +151,12 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
               collapsed={2}
               displayDataTypes={false}
               enableClipboard={true}
-              style={{
-                minHeight: viewerHeight,
-                overflowY: "auto",
-                backgroundColor: "transparent", // No extra panel
-              }}
+              style={{ minHeight: viewerHeight, overflowY: "auto", backgroundColor: "transparent" }}
             />
           ) : fileType === "text" ? (
             <pre className="text-white text-sm whitespace-pre-wrap break-words">{fileContent}</pre>
           ) : (
-            <a
-              href={`http://localhost:8000/s3/download?public_url=${publicUrl}&file_key=${fileContent}`}
-              className="text-blue-400 underline"
-            >
+            <a href={`http://localhost:8000/s3/download?public_url=${publicUrl}&file_key=${fileContent}`} className="text-blue-400 underline">
               Download File
             </a>
           )
@@ -168,7 +164,6 @@ const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
           <div className="text-gray-400 text-lg">Select a file to view its contents.</div>
         )}
       </div>
-
     </div>
   );
 }

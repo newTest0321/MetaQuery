@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, Database, Settings, FileText } from "lucide-react";
+import Link from "next/link";
 
 const userEmail = "zendijkstra@fearlessmails.com";
 
@@ -56,7 +57,7 @@ export default function Dashboard() {
         </nav>
       </aside>
 
-      
+
 
       {/* Main Content */}
       <main className="flex-1 p-6">
@@ -69,9 +70,11 @@ export default function Dashboard() {
         {/* Search and Your Projects in One Line */}
         <div className="flex justify-between items-center mt-10">
           <h2 className="text-2xl font-semibold">Your Projects</h2>
-          <button className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">
-            New Project
-          </button>
+          <Link href="/session">
+            <button className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">
+              New Project
+            </button>
+          </Link>
         </div>
 
         {/* Account Usage */}
