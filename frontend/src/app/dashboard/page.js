@@ -1,20 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Search, Database, Settings, FileText, Trash2, LogOut } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, Database, Settings, FileText, Trash2, LogOut, Image, PinIcon, ChevronDown, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import "../../styles/Sidebar.css";
 
 const userEmail = "zendijkstra@fearlessmails.com";
+const username = "uahnbu"; // Variable for username as requested
 
 export default function Dashboard() {
   const [savedSessions, setSavedSessions] = useState([]);
+  const [profileExpanded, setProfileExpanded] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
+  const searchInputRef = useRef(null);
   const router = useRouter();
 
   useEffect(() => {
     const sessions = JSON.parse(localStorage.getItem("savedSessions")) || [];
     setSavedSessions(sessions);
   }, []);
+
+  useEffect(() => {
+    if (searchMode && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchMode]);
 
   const handleResumeSession = (sessionName) => {
     router.push(`/s3-viewer?session=${sessionName}`);
@@ -31,51 +42,135 @@ export default function Dashboard() {
     router.push("/login");
   };
 
+  const toggleProfile = () => {
+    setProfileExpanded(!profileExpanded);
+  };
+
+  const activateSearchMode = () => {
+    if (!searchMode) {
+      setSearchMode(true);
+    }
+  };
+
+  const deactivateSearchMode = () => {
+    setSearchMode(false);
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      console.log(`Searching for: ${e.target.value}`);
+      // Implement your search functionality here
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <aside className="w-64 p-4 border-r border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent">
-            MetaQuery
-          </h1>
+      {/* Simplified Static Sidebar */}
+      <div id="nav-bar" className={searchMode ? 'search-mode' : ''}>
+        <div id="nav-header">
+          <Link href="/" className="logo-link">
+            <h1 id="nav-title">MetaQuery</h1>
+          </Link>
+          <hr />
         </div>
-        <hr className="border-gray-600 mb-4 w-[calc(100vw-2rem)] absolute left-0" />
-        <nav className="mt-10">
-          <button className="w-full flex items-center gap-2 bg-gray-800 p-2 rounded border border-gray-600 hover:bg-gray-700">
-            <Search size={16} className="text-gray-400" />
-            <span className="text-gray-300 flex-1 text-left">Search</span>
-            <span className="text-xs text-gray-400">Ctrl+K</span>
-          </button>
-          <ul className="space-y-2 mt-4">
-            <li className="flex items-center gap-2 text-gray-300 p-2 bg-gray-700 rounded">
-              <Database size={16} /> Projects
-            </li>
-            <li className="flex items-center gap-2 text-gray-400 p-2 hover:bg-gray-700 rounded">
-              <FileText size={16} /> Billing
-            </li>
-            <li className="flex items-center gap-2 text-gray-400 p-2 hover:bg-gray-700 rounded">
-              <Settings size={16} /> Settings
-            </li>
-          </ul>
-        </nav>
-        {/* Logout Button */}
-        <button 
-          onClick={handleLogout}
-          className="absolute bottom-4 left-4 flex items-center gap-2 bg-red-600 px-4 py-2 rounded text-white hover:bg-red-500">
-          <LogOut size={16} />
-          Logout
-        </button>
-      </aside>
+        
+        <div id="nav-content">
+          <div 
+            className={`nav-button search-bar ${searchMode ? 'search-bar-active' : ''}`}
+            onClick={activateSearchMode}
+          >
+            <div className="icon">
+              <Search size={20} />
+            </div>
+            <span>Your Work</span>
+            <input 
+              ref={searchInputRef}
+              type="text" 
+              className="search-input"
+              placeholder="Search..." 
+              onKeyDown={handleSearchSubmit}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div 
+              className="search-cancel" 
+              onClick={(e) => {
+                e.stopPropagation();
+                deactivateSearchMode();
+              }}
+            >
+              <X size={16} />
+            </div>
+          </div>
+          
+          <div className="nav-button">
+            <div className="icon">
+              <Image size={20} />
+            </div>
+            <span>Assets</span>
+          </div>
+
+          
+          <div className="nav-button">
+            <div className="icon">
+              <Database size={20} />
+            </div>
+            <span>Projects</span>
+          </div>
+          
+          <div className="nav-button">
+            <div className="icon">
+              <FileText size={20} />
+            </div>
+            <span>Billing</span>
+          </div>
+          
+          <div className="nav-button">
+            <div className="icon">
+              <Settings size={20} />
+            </div>
+            <span>Settings</span>
+          </div>
+        </div>
+
+        <div id="nav-footer">
+          <div className="nav-footer-header" onClick={toggleProfile}>
+            <div className="profile-container">
+              <div className="user-avatar">
+                <img src="https://placehold.co/40x40" alt="User avatar" />
+              </div>
+              <div className="user-info">
+                <div className="username">{username}</div>
+                <div className="user-role">{userEmail}</div>
+              </div>
+            </div>
+            <div className={`arrow-icon ${profileExpanded ? 'arrow-down' : ''}`}>
+              <ChevronDown size={16} />
+            </div>
+          </div>
+          
+          <div className={`profile-dropdown ${profileExpanded ? 'expanded' : ''}`}>
+            <div className="user-status">
+              
+            </div>
+            
+            <button 
+              onClick={handleLogout}
+              className="logout-button">
+              <LogOut size={16} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-6">
-        <div className="flex justify-between items-center">
+      <main className="flex-1 p-6 ml-[calc(var(--navbar-width)+2vw)]">
+        <div className="flex justify-between items-center dashboard-main">
           <h1 className="text-xl font-semibold">Dashboard</h1>
-          <span className="text-sm text-gray-300">{userEmail}</span>
         </div>
 
-        <div className="flex justify-between items-center mt-10">
+        <div className="flex justify-between items-center mt-10 project-header">
           <h2 className="text-2xl font-semibold">Your Projects</h2>
           <Link href="/session" passHref>
             <button className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">
@@ -142,4 +237,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
