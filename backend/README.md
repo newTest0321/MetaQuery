@@ -1,5 +1,5 @@
 ## Run Backend 
 
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
