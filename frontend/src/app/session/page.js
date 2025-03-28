@@ -902,8 +902,9 @@ export default function S3Viewer() {
 
                 {/* List Files Button */}
                 <button
-                    className="w-full p-2.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30"
+                    className={`w-full p-2.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30 ${!publicUrl ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:from-blue-500 hover:via-purple-500 hover:to-pink-500'}`}
                     onClick={() => handleListFiles("")}
+                    disabled={!publicUrl}
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1058,28 +1059,31 @@ export default function S3Viewer() {
                     <div className="flex gap-2">
                         <button
                             onClick={() => handleFilterClick('schema')}
-                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${activeFilter === 'schema'
+                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 cursor-pointer ${!publicUrl ? 'opacity-50 cursor-not-allowed' : ''} ${activeFilter === 'schema'
                                 ? 'bg-blue-600 text-white shadow-lg'
                                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
+                            disabled={!publicUrl}
                         >
                             Schema
                         </button>
                         <button
                             onClick={() => handleFilterClick('partition')}
-                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${activeFilter === 'partition'
+                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 cursor-pointer ${!publicUrl ? 'opacity-50 cursor-not-allowed' : ''} ${activeFilter === 'partition'
                                 ? 'bg-purple-600 text-white shadow-lg'
                                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
+                            disabled={!publicUrl}
                         >
                             Partition
                         </button>
                         <button
                             onClick={() => handleFilterClick('snapshot')}
-                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${activeFilter === 'snapshot'
+                            className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 cursor-pointer ${!publicUrl ? 'opacity-50 cursor-not-allowed' : ''} ${activeFilter === 'snapshot'
                                 ? 'bg-pink-600 text-white shadow-lg'
                                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                                 }`}
+                            disabled={!publicUrl}
                         >
                             Snapshot
                         </button>
@@ -1089,7 +1093,7 @@ export default function S3Viewer() {
                     <Popover open={showSavePopup} onOpenChange={setShowSavePopup}>
                         <PopoverTrigger asChild>
                             <Button
-                                className="px-4 py-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30"
+                                className="px-4 cursor-pointer py-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -1189,7 +1193,7 @@ export default function S3Viewer() {
                                     setPanelWidth(66);
                                 }
                             }}
-                            className="absolute top-4 right-0 z-10 p-2 rounded-l-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-all transform hover:scale-105 shadow-lg"
+                            className="absolute top-0 right-0 z-10 p-2 rounded-l-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-all transform hover:scale-105 shadow-lg border-t border-l border-b border-gray-700"
                             title={isPanelExpanded ? "Collapse Panel" : "Expand Panel"}
                         >
                             {isPanelExpanded ? "⟶" : "⟵"}
