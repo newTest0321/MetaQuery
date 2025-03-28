@@ -5,8 +5,6 @@ from app.routes.s3_route import s3_router
 from app.routes.session_route import session_router
 
 
-
-
 app = FastAPI()
 
 # CORS Middleware
