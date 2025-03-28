@@ -1171,135 +1171,94 @@ export default function S3Viewer() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header with Tools and Actions */}
         <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-950">
-          {/* Tools Section - Show buttons directly when viewing JSON, otherwise show dropdown */}
-          {fileContent && fileType === "json" ? (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleFilterClick('schema')}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
-                  activeFilter === 'schema' 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 border border-blue-500/20' 
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-blue-500/30'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
-                </svg>
-                Schema
-              </button>
-
-              <button
-                onClick={() => handleFilterClick('partition')}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
-                  activeFilter === 'partition' 
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25 border border-purple-500/20' 
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-purple-500/30'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16" />
-                </svg>
-                Partition
-              </button>
-
-              <button
-                onClick={() => handleFilterClick('snapshot')}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
-                  activeFilter === 'snapshot' 
-                    ? 'bg-gradient-to-r from-pink-600 to-pink-700 text-white shadow-lg shadow-pink-500/25 border border-pink-500/20' 
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-pink-500/30'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z M9 13l3 3m0 0l3-3m-3 3V8" />
-                </svg>
-                Snapshot
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              {/* First Dropdown - Metadata Tools */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-blue-500/30">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
+          {/* Tools Section - Always show both dropdowns */}
+          <div className="flex items-center gap-3">
+            {/* First Dropdown - Metadata Tools */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-blue-500/30">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
+                  </svg>
+                  Metadata Tools
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleFilterClick('schema')}
+                    className={`w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 ${
+                      activeFilter === 'schema' ? 'bg-blue-500/20' : ''
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
                     </svg>
-                    Metadata Tools
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 bg-gray-800 border-gray-700">
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => handleFilterClick('schema')}
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
-                      </svg>
-                      Schema
-                    </button>
-                    <button
-                      onClick={() => handleFilterClick('partition')}
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16" />
-                      </svg>
-                      Partition
-                    </button>
-                    <button
-                      onClick={() => handleFilterClick('snapshot')}
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z M9 13l3 3m0 0l3-3m-3 3V8" />
-                      </svg>
-                      Snapshot
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Second Dropdown - Additional Tools */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-green-500/30">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    Schema
+                  </button>
+                  <button
+                    onClick={() => handleFilterClick('partition')}
+                    className={`w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 ${
+                      activeFilter === 'partition' ? 'bg-purple-500/20' : ''
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16" />
                     </svg>
-                    Tools
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 bg-gray-800 border-gray-700">
-                  <div className="space-y-2">
-                    <button
-                      onClick={handleExcelExport}
-                      disabled={!filteredData || filteredData.length === 0}
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Export to Excel
-                    </button>
-                    <button
-                      onClick={() => setShowNotesModal(true)}
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Notes
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
+                    Partition
+                  </button>
+                  <button
+                    onClick={() => handleFilterClick('snapshot')}
+                    className={`w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 ${
+                      activeFilter === 'snapshot' ? 'bg-pink-500/20' : ''
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z M9 13l3 3m0 0l3-3m-3 3V8" />
+                    </svg>
+                    Snapshot
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Second Dropdown - Additional Tools */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-green-500/30">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Tools
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="space-y-2">
+                  <button
+                    onClick={handleExcelExport}
+                    disabled={!filteredData || filteredData.length === 0}
+                    className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export to Excel
+                  </button>
+                  <button
+                    onClick={() => setShowNotesModal(true)}
+                    className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Notes
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           
           {/* Header Actions Section */}
           <div className="flex items-center gap-4">
