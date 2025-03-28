@@ -1,0 +1,48 @@
+.darshan-box {
+  background-color: #4a90e2;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+}
+
+.darshan-box:hover {
+  background-color: #357abd;
+}
+
+.darshan-box:focus {
+  outline: 2px solid #1e4e8c;
+  outline-offset: 2px;
+}
+
+.dashboard-box {
+  background-color: #ffffff;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 15px 25px;
+  margin: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2563eb;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-box:hover {
+  background-color: #2563eb;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-box:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+} 
