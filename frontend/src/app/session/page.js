@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -10,6 +10,9 @@ import { isAuthenticated } from "@/utils/auth";
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 export default function S3Viewer() {
+  const viewerRef = useRef(null);
+  const [viewerHeight, setViewerHeight] = useState("auto");
+
   const [publicUrl, setPublicUrl] = useState("");
   const [contents, setContents] = useState({ folders: [], files: [] });
   const [currentPath, setCurrentPath] = useState("");
