@@ -40,6 +40,26 @@ export default function S3Viewer() {
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [folderContents, setFolderContents] = useState({});
   const [isPanelExpanded, setIsPanelExpanded] = useState(false); // New state for panel expansion
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [userEmail, setUserEmail] = useState("user@example.com"); // You can replace this with actual user email
+  const [showCards, setShowCards] = useState(true);
+  // Add new state to track if JSON viewer is enabled
+  const [isJsonViewerEnabled, setIsJsonViewerEnabled] = useState(false);
+  // Add new state for navigation history
+  const [navigationHistory, setNavigationHistory] = useState([{
+    type: 'initial',
+    showCards: true,
+    isJsonViewerEnabled: false,
+    currentPath: '',
+    fileContent: null,
+    fileType: null,
+    activeFilter: null
+  }]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  // Add new state variables for Notes
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [currentNote, setCurrentNote] = useState('');
 
   const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
@@ -96,13 +116,28 @@ export default function S3Viewer() {
   };
 
   const handleFileClick = async (fileKey) => {
+    if (!isJsonViewerEnabled) {
+      return;
+    }
+
     try {
       const response = await axios.get(
         `http://localhost:8000/s3/get-file?public_url=${publicUrl}&file_key=${fileKey}`
       );
       const { content, type } = response.data;
+      
+      const newState = {
+        type: 'file_view',
+        showCards: false,
+        isJsonViewerEnabled: true,
+        currentPath: fileKey,
+        fileContent: type === 'json' ? JSON.parse(content) : content,
+        fileType: type,
+        activeFilter: null
+      };
+      
+      addToHistory(newState);
       setFileType(type);
-
       if (type === "json") {
         setFileContent(JSON.parse(content));
         setIsMetadataOpened(true);
@@ -382,19 +417,28 @@ export default function S3Viewer() {
   };
 
   const handleFilterClick = (filterType) => {
+    const newState = {
+      type: 'filter',
+      showCards: false,
+      isJsonViewerEnabled: true,
+      currentPath,
+      fileContent,
+      fileType,
+      activeFilter: activeFilter === filterType ? null : filterType
+    };
+    
+    addToHistory(newState);
+    
     if (activeFilter === filterType) {
       setActiveFilter(null);
       setFilteredData(null);
     } else {
       setActiveFilter(filterType);
-      
-      // Extract metadata from the current file content
       if (fileContent && fileType === 'json') {
         const extractedData = extractMetadata(fileContent, filterType);
         if (extractedData.length > 0) {
           setFilteredData(extractedData);
         } else {
-          // If no data found for this filter type
           setFilteredData([{
             message: `No ${filterType} metadata found in the current file`
           }]);
@@ -857,18 +901,125 @@ export default function S3Viewer() {
     );
   };
 
+  const handleViewJsonClick = () => {
+    const newState = {
+      type: 'view_json',
+      showCards: false,
+      isJsonViewerEnabled: true,
+      currentPath,
+      fileContent,
+      fileType,
+      activeFilter
+    };
+    addToHistory(newState);
+    setShowCards(false);
+    setIsJsonViewerEnabled(true);
+  };
+
+  // Function to add new state to history
+  const addToHistory = (newState) => {
+    const nextIndex = currentHistoryIndex + 1;
+    const newHistory = navigationHistory.slice(0, nextIndex);
+    newHistory.push({
+      ...newState,
+      timestamp: Date.now()
+    });
+    setNavigationHistory(newHistory);
+    setCurrentHistoryIndex(nextIndex);
+  };
+
+  const handleBack = () => {
+    if (currentHistoryIndex > 0) {
+      const prevIndex = currentHistoryIndex - 1;
+      const prevState = navigationHistory[prevIndex];
+      
+      setCurrentHistoryIndex(prevIndex);
+      setShowCards(prevState.showCards);
+      setIsJsonViewerEnabled(prevState.isJsonViewerEnabled);
+      setFileContent(prevState.fileContent);
+      setFileType(prevState.fileType);
+      setActiveFilter(prevState.activeFilter);
+      
+      if (prevState.currentPath !== currentPath) {
+        handleListFiles(prevState.currentPath);
+      }
+    }
+  };
+
+  const handleForward = () => {
+    if (currentHistoryIndex < navigationHistory.length - 1) {
+      const nextIndex = currentHistoryIndex + 1;
+      const nextState = navigationHistory[nextIndex];
+      
+      setCurrentHistoryIndex(nextIndex);
+      setShowCards(nextState.showCards);
+      setIsJsonViewerEnabled(nextState.isJsonViewerEnabled);
+      setFileContent(nextState.fileContent);
+      setFileType(nextState.fileType);
+      setActiveFilter(nextState.activeFilter);
+      
+      if (nextState.currentPath !== currentPath) {
+        handleListFiles(nextState.currentPath);
+      }
+    }
+  };
+
+  // Add function to handle Excel export
+  const handleExcelExport = () => {
+    if (!filteredData || filteredData.length === 0) return;
+    
+    // Create CSV content
+    const headers = Object.keys(filteredData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...filteredData.map(row => 
+        headers.map(header => {
+          const value = row[header];
+          return typeof value === 'object' ? JSON.stringify(value) : value;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${activeFilter || 'data'}_export.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Add function to handle saving notes
+  const handleSaveNote = () => {
+    if (!currentNote.trim()) return;
+    
+    const newNote = {
+      id: Date.now(),
+      content: currentNote,
+      timestamp: new Date().toISOString(),
+      filter: activeFilter || 'general'
+    };
+    
+    setNotes([...notes, newNote]);
+    setCurrentNote('');
+  };
+
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-900 text-white overflow-hidden">
       {/* Sidebar */}
-      <div className="w-full md:w-1/4 h-full p-6 overflow-y-auto bg-gray-950 border-r border-gray-700">
-        {/* MetaQuery Title with Animation */}
-        <div className="mb-12"> {/* Increased bottom margin for better spacing */}
-          <h1 className="text-4xl font-extrabold metaquery-title"> {/* Increased font size */}
+      <div className="w-full md:w-1/4 h-full flex flex-col bg-gray-950 border-r border-gray-700">
+        <div className="flex-1 p-6 overflow-y-auto">
+          {/* MetaQuery Title with Animation */}
+          <div className="mb-12">
+            <h1 className="text-4xl font-extrabold metaquery-title">
           MetaQuery
         </h1>
-        </div>
+          </div>
 
-        <label className="block text-sm font-medium mb-2">Enter Public S3 URL</label>
+          <label className="block text-sm font-medium mb-2">Enter Public S3 URL</label>
         <input
           type="text"
           className="w-full p-3 bg-gray-800 text-white border border-gray-600 rounded-lg mb-4"
@@ -877,241 +1028,359 @@ export default function S3Viewer() {
           placeholder="https://example.s3.amazonaws.com/"
         />
 
-        {/* List Files Button */}
+          {/* List Files Button */}
           <button
-          className="w-full p-2.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30"
+            className="w-full p-2.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30 cursor-pointer"
             onClick={() => handleListFiles("")}
           >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          List Files
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            List Files
           </button>
 
-        {/* Navigation Buttons */}
-        <div className="flex gap-2 mt-2">
-          {/* Back Button */}
+          {/* Navigation Buttons */}
+          <div className="flex gap-2 mt-2">
+            {/* Back Button */}
         <button
-            className="flex-1 p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => {
-              if (pathHistory.length > 0) {
-                const newHistory = [...pathHistory];
-                const currentPath = newHistory.pop();
-                setPathHistory(newHistory);
-                
-                // Add current path to forward history
-                setForwardHistory(prev => [...prev, currentPath]);
-                
-                // Navigate to the previous path
-                const newPath = newHistory.length > 0 ? newHistory[newHistory.length - 1].path : "";
-                handleListFiles(newPath);
-              }
-            }}
-            disabled={pathHistory.length === 0}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back
+              className="flex-1 p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleBack}
+              disabled={currentHistoryIndex === 0}
+        >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
         </button>
 
-          {/* Forward Button */}
-          <button
-            className="flex-1 p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => {
-              if (forwardHistory.length > 0) {
-                const newForwardHistory = [...forwardHistory];
-                const nextPath = newForwardHistory.pop();
-                setForwardHistory(newForwardHistory);
-                
-                // Add current path back to path history
-                setPathHistory(prev => [...prev, nextPath]);
-                
-                // Navigate to the next path
-                handleListFiles(nextPath.path);
-              }
-            }}
-            disabled={forwardHistory.length === 0}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-            Forward
-          </button>
+            {/* Forward Button */}
+            <button
+              className="flex-1 p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleForward}
+              disabled={currentHistoryIndex === navigationHistory.length - 1}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+              Forward
+            </button>
             </div>
 
-        {/* File List */}
-        <div className="mt-4 space-y-0.5">
-          {contents.folders.map((folder) => (
-            <FileTreeItem
-              key={folder}
-              item={folder}
-              isFolder={true}
-            />
-          ))}
-          {contents.files.map((file) => (
-            <FileTreeItem
-              key={file}
-              item={file}
-              isFolder={false}
-            />
+          {/* File List */}
+          <div className="mt-4 space-y-0.5">
+            {contents.folders.map((folder) => (
+              <FileTreeItem
+                key={folder}
+                item={folder}
+                isFolder={true}
+              />
+            ))}
+            {contents.files.map((file) => (
+              <FileTreeItem
+                key={file}
+                item={file}
+                isFolder={false}
+              />
           ))}
         </div>
 
-        {/* Saved Sessions Section */}
-        <div className="mt-6">
-          <div 
-            className="flex items-center justify-between cursor-pointer mb-2 group"
-            onClick={() => setShowSavedSessions(!showSavedSessions)}
-          >
-            <p className="text-lg font-semibold text-gray-400">Saved Sessions</p>
-            <button className="text-gray-500 group-hover:text-gray-300 transition-colors">
-              <svg 
-                className={`w-5 h-5 transform transition-transform duration-200 ${showSavedSessions ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+          {/* Saved Sessions Section */}
+          <div className="mt-6">
+            <div 
+              className="flex items-center justify-between cursor-pointer mb-2 group"
+              onClick={() => setShowSavedSessions(!showSavedSessions)}
+            >
+              <p className="text-lg font-semibold text-gray-400">Saved Sessions</p>
+              <button className="text-gray-500 group-hover:text-gray-300 transition-colors">
+                <svg 
+                  className={`w-5 h-5 transform transition-transform duration-200 ${showSavedSessions ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
         </button>
-          </div>
+            </div>
 
-          {showSavedSessions && (
-            <div className="space-y-3 animate-slideDown">
+            {showSavedSessions && (
+              <div className="space-y-3 animate-slideDown">
           {savedSessions.length > 0 ? (
             <ul className="space-y-3">
               {savedSessions.map((session, index) => (
                 <li
                   key={index}
-                      className="p-3 bg-gray-800 rounded-lg flex items-center justify-between hover:bg-gray-700 transition group"
+                    className="p-3 bg-gray-800 rounded-lg flex items-center justify-between hover:bg-gray-700 transition group"
                 >
                   <span
-                        className="truncate w-full cursor-pointer text-gray-400 group-hover:text-gray-300"
+                      className="truncate w-full cursor-pointer text-gray-400 group-hover:text-gray-300 flex items-center gap-2"
                     onClick={() => handleResumeSession(session)}
                   >
-                    📌 {session.name}
+                      <svg 
+                        className="w-5 h-5 text-purple-500/80 group-hover:text-purple-400" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={1.5} 
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+                        />
+                      </svg>
+                      {session.name}
                   </span>
                   <button
-                        className="ml-3 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="ml-3 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => handleDeleteSession(index)}
                   >
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          <path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6" stroke="currentColor" strokeWidth="2"/>
-                          <path d="M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/>
-                          <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
+                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-                <p className="text-gray-500 text-sm">No saved sessions yet.</p>
-              )}
+                  <p className="text-gray-500 text-sm">No saved sessions yet.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* User Email Section */}
+        <div className="p-4 border-t border-gray-800 bg-gray-900/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center text-white font-medium">
+              {userEmail[0].toUpperCase()}
             </div>
-          )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-400 truncate">{userEmail}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* File Viewer Panel */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Filter Buttons */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-900">
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleFilterClick('schema')}
-              className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${
-                activeFilter === 'schema' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Schema
-            </button>
-            <button
-              onClick={() => handleFilterClick('partition')}
-              className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${
-                activeFilter === 'partition' 
-                  ? 'bg-purple-600 text-white shadow-lg' 
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Partition
-            </button>
-            <button
-              onClick={() => handleFilterClick('snapshot')}
-              className={`px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${
-                activeFilter === 'snapshot' 
-                  ? 'bg-pink-600 text-white shadow-lg' 
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Snapshot
-            </button>
-          </div>
-          
-          {/* Save Session Button moved to top right */}
-          <Popover open={showSavePopup} onOpenChange={setShowSavePopup}>
-            <PopoverTrigger asChild>
-              <Button
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-purple-500/20 hover:border-purple-400/30"
+        {/* Header with Tools and Actions */}
+        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-950">
+          {/* Tools Section - Show buttons directly when viewing JSON, otherwise show dropdown */}
+          {fileContent && fileType === "json" ? (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleFilterClick('schema')}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
+                  activeFilter === 'schema' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 border border-blue-500/20' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-blue-500/30'
+                }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
                 </svg>
-                Save Session
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-80 bg-gray-800 border-gray-700" 
-              sideOffset={8}
-              alignOffset={-20}
-              align="end"
+                Schema
+              </button>
+
+              <button
+                onClick={() => handleFilterClick('partition')}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
+                  activeFilter === 'partition' 
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25 border border-purple-500/20' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-purple-500/30'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16" />
+                </svg>
+                Partition
+              </button>
+
+              <button
+                onClick={() => handleFilterClick('snapshot')}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
+                  activeFilter === 'snapshot' 
+                    ? 'bg-gradient-to-r from-pink-600 to-pink-700 text-white shadow-lg shadow-pink-500/25 border border-pink-500/20' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-750 hover:text-white border border-gray-700 hover:border-pink-500/30'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z M9 13l3 3m0 0l3-3m-3 3V8" />
+                </svg>
+                Snapshot
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              {/* First Dropdown - Metadata Tools */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-blue-500/30">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
+                    </svg>
+                    Metadata Tools
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 bg-gray-800 border-gray-700">
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handleFilterClick('schema')}
+                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2 2 2 2 2h12c2 0 2-2 2-2V9c0-2-2-2-2-2h-6l-2-2H6C4 5 4 7 4 7z" />
+                      </svg>
+                      Schema
+                    </button>
+                    <button
+                      onClick={() => handleFilterClick('partition')}
+                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16" />
+                      </svg>
+                      Partition
+                    </button>
+                    <button
+                      onClick={() => handleFilterClick('snapshot')}
+                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z M9 13l3 3m0 0l3-3m-3 3V8" />
+                      </svg>
+                      Snapshot
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Second Dropdown - Additional Tools */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 border border-gray-700 hover:border-green-500/30">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Tools
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 bg-gray-800 border-gray-700">
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleExcelExport}
+                      disabled={!filteredData || filteredData.length === 0}
+                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export to Excel
+                    </button>
+                    <button
+                      onClick={() => setShowNotesModal(true)}
+                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Notes
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+          
+          {/* Header Actions Section */}
+          <div className="flex items-center gap-4">
+            {/* Dashboard Button */}
+            <Button
+              onClick={() => window.location.href = '/dashboard'}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-gray-700 hover:border-gray-600 cursor-pointer"
             >
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-white">Save Session</h4>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Dashboard
+          </Button>
+
+            {/* Save Session Button */}
+            <Popover open={showSavePopup} onOpenChange={setShowSavePopup}>
+              <PopoverTrigger asChild>
+                <Button
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-blue-500/20 hover:border-blue-400/30 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save Session
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-80 bg-gray-800 border-gray-700" 
+                sideOffset={8}
+                alignOffset={-20}
+                align="end"
+              >
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-white">Save Session</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sessionName" className="text-gray-300">
+                      Session Name
+                    </Label>
+                    <Input
+                      id="sessionName"
+                      value={sessionName}
+                      onChange={(e) => setSessionName(e.target.value)}
+                      placeholder="Enter a name for your session"
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 bg-gray-700 text-white border-gray-600 hover:bg-gray-600 hover:text-white"
+                      onClick={handleCancelSave}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white"
+                      onClick={handleSaveSession}
+                      disabled={!sessionName.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sessionName" className="text-gray-300">
-                    Session Name
-                  </Label>
-                  <Input
-                    id="sessionName"
-                    value={sessionName}
-                    onChange={(e) => setSessionName(e.target.value)}
-                    placeholder="Enter a name for your session"
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-gray-700 text-white border-gray-600 hover:bg-gray-600 hover:text-white"
-                    onClick={handleCancelSave}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white"
-                    onClick={handleSaveSession}
-                    disabled={!sessionName.trim()}
-                  >
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center px-4 py-2 bg-gray-800 border-b border-gray-700 overflow-x-auto custom-scrollbar-thin">
+        {/* Breadcrumb Navigation with matched color */}
+        <div className="flex items-center px-4 py-2 bg-gray-950 border-b border-gray-700 overflow-x-auto custom-scrollbar-thin">
           <button
-            onClick={() => handleListFiles("")}
-            className="text-gray-400 hover:text-white px-2 py-1 rounded-md hover:bg-gray-700 transition-colors flex items-center"
+            onClick={() => {
+              handleListFiles("");
+              setShowCards(true);
+              setIsJsonViewerEnabled(false);
+              setFileContent(null);
+              setActiveFilter(null);
+            }}
+            className="text-gray-400 hover:text-white px-2 py-1 rounded-md hover:bg-gray-700 transition-colors flex items-center cursor-pointer"
           >
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -1164,29 +1433,66 @@ export default function S3Viewer() {
             </button>
 
             <div className="flex-1 h-[calc(100vh-8rem)] overflow-hidden bg-gray-900">
-        {fileContent ? (
+        {fileContent && isJsonViewerEnabled ? (
           fileType === "json" ? (
-                  <div className="h-full rounded-lg bg-gray-800/80 p-4 overflow-auto custom-scrollbar">
-                    <CustomJsonView data={fileContent} />
-                  </div>
-                ) : (
-                  <pre className="h-full overflow-auto text-white text-base whitespace-pre-wrap break-words font-mono bg-gray-800/80 p-4 rounded-lg custom-scrollbar">
-                    {fileContent}
-                  </pre>
-                )
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center transform transition-all duration-300 hover:scale-105">
-                    <div className="bg-gray-800/80 rounded-xl p-8 shadow-2xl border border-gray-700">
-                      <svg className="w-24 h-24 mx-auto mb-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="h-full rounded-lg bg-gray-800/80 p-4 overflow-auto custom-scrollbar">
+              <CustomJsonView data={fileContent} />
+            </div>
+          ) : (
+            <pre className="h-full overflow-auto text-white text-base whitespace-pre-wrap break-words font-mono bg-gray-800/80 p-4 rounded-lg custom-scrollbar">
+              {fileContent}
+            </pre>
+          )
+        ) : (
+          showCards ? (
+            <div className="h-full flex items-center justify-center p-8">
+              <div className="grid grid-cols-2 gap-8 w-full max-w-4xl">
+                {/* View JSON File Card */}
+                <div 
+                  onClick={handleViewJsonClick}
+                  className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-purple-500/10 hover:-translate-y-1 cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-center mb-6">
+                      <svg className="w-16 h-16 text-purple-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-xl text-gray-300 font-medium">Select a file to view its contents</p>
-                      <p className="mt-2 text-gray-500 text-sm">Choose a file from the sidebar to get started</p>
                     </div>
+                    <h3 className="text-xl font-semibold text-center text-white mb-3">View JSON File</h3>
+                    <p className="text-gray-400 text-center text-sm">Select a JSON file from the sidebar to view and analyze its contents</p>
                   </div>
                 </div>
-              )}
+
+                {/* Version Comparison Card */}
+                <div className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-center mb-6">
+                      <svg className="w-16 h-16 text-blue-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-center text-white mb-3">Version Comparison</h3>
+                    <p className="text-gray-400 text-center text-sm">Compare different versions of your files to track changes and updates</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center transform transition-all duration-300 hover:scale-105">
+                <div className="bg-gray-800/80 rounded-xl p-8 shadow-2xl border border-gray-700">
+                  <svg className="w-24 h-24 mx-auto mb-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-xl text-gray-300 font-medium">Select a file to view its contents</p>
+                  <p className="mt-2 text-gray-500 text-sm">Choose a file from the sidebar to get started</p>
+                </div>
+              </div>
+            </div>
+          )
+        )}
             </div>
       </div>
 
@@ -1691,6 +1997,73 @@ export default function S3Viewer() {
           animation: shimmer 6s linear infinite; */
         }
       `}</style>
+
+      {/* Add Notes Modal */}
+      {showNotesModal && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-8 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-[90vw] max-w-[800px] max-h-[90vh] flex flex-col border border-gray-600 relative animate-scale-up">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-700 flex justify-between items-center sticky top-0 bg-gray-800 rounded-t-xl z-10">
+              <h3 className="text-xl font-semibold flex items-center">
+                <span className="inline-block w-3 h-3 rounded-full mr-2 bg-yellow-500"></span>
+                Notes
+              </h3>
+              <button
+                onClick={() => setShowNotesModal(false)}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {/* Notes Input */}
+              <div className="mb-6">
+                <textarea
+                  value={currentNote}
+                  onChange={(e) => setCurrentNote(e.target.value)}
+                  placeholder="Type your note here..."
+                  className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-300 placeholder-gray-500 focus:border-yellow-500 focus:ring-yellow-500 resize-none"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={!currentNote.trim()}
+                    className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Note
+            </button>
+                </div>
+              </div>
+
+              {/* Notes List */}
+              <div className="space-y-4">
+                {notes.map((note) => (
+                  <div key={note.id} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm text-gray-400">
+                        {new Date(note.timestamp).toLocaleString()}
+                      </span>
+                      <span className="text-sm px-2 py-1 bg-gray-800 rounded-full text-yellow-500">
+                        {note.filter}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 whitespace-pre-wrap">{note.content}</p>
+                  </div>
+                ))}
+                {notes.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    No notes yet. Start by adding one above!
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

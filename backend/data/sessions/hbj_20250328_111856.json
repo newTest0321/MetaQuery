@@ -1,0 +1,172 @@
+{
+  "name": "hbj",
+  "timestamp": "2025-03-28T05:48:56.187Z",
+  "publicUrl": "https://ecommerce-data-0101.s3.eu-north-1.amazonaws.com/",
+  "currentPath": "iceberg_orders/metadata/",
+  "currentFile": null,
+  "fileContent": {
+    "format-version": 2,
+    "table-uuid": "ecommerce-iceberg-98765",
+    "location": "s3://ecommerce-data/iceberg_orders/",
+    "last-updated-ms": 1712000000000,
+    "schemas": [
+      {
+        "schema-id": 1,
+        "fields": [
+          {
+            "id": 1,
+            "name": "order_id",
+            "type": "string"
+          },
+          {
+            "id": 2,
+            "name": "customer_id",
+            "type": "string"
+          },
+          {
+            "id": 3,
+            "name": "product_id",
+            "type": "string"
+          },
+          {
+            "id": 4,
+            "name": "order_date",
+            "type": "timestamp"
+          },
+          {
+            "id": 5,
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "id": 6,
+            "name": "quantity",
+            "type": "int"
+          },
+          {
+            "id": 7,
+            "name": "total_price",
+            "type": "double"
+          }
+        ]
+      }
+    ],
+    "snapshots": [
+      {
+        "snapshot-id": 123456789,
+        "timestamp-ms": 1712000100000,
+        "manifest-list": "s3://ecommerce-data/iceberg_orders/manifest/manifest-1.avro"
+      },
+      {
+        "snapshot-id": 123456790,
+        "timestamp-ms": 1712000500000,
+        "manifest-list": "s3://ecommerce-data/iceberg_orders/manifest/manifest-2.avro"
+      }
+    ]
+  },
+  "fileType": "json",
+  "isMetadataOpened": true,
+  "activeFilter": "snapshot",
+  "filteredData": [
+    {
+      "id": "unknown",
+      "timestamp": "N/A",
+      "size": "N/A",
+      "status": "N/A"
+    },
+    {
+      "id": "unknown",
+      "timestamp": "N/A",
+      "size": "N/A",
+      "status": "N/A"
+    }
+  ],
+  "selectedItems": [
+    {
+      "path": "tables.0.schema",
+      "value": {
+        "columns": [
+          {
+            "name": "order_id",
+            "type": "STRING",
+            "nullable": false
+          },
+          {
+            "name": "customer_id",
+            "type": "STRING",
+            "nullable": false
+          },
+          {
+            "name": "product_id",
+            "type": "STRING",
+            "nullable": false
+          },
+          {
+            "name": "order_date",
+            "type": "TIMESTAMP",
+            "nullable": false
+          },
+          {
+            "name": "quantity",
+            "type": "INTEGER",
+            "nullable": false
+          },
+          {
+            "name": "price",
+            "type": "DOUBLE",
+            "nullable": false
+          },
+          {
+            "name": "status",
+            "type": "STRING",
+            "nullable": true,
+            "enum": [
+              "Pending",
+              "Shipped",
+              "Delivered",
+              "Cancelled"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "showSelectedPanel": false,
+  "isCodeExpanded": false,
+  "expandedLines": [
+    "tables",
+    "statistics",
+    "tables.2",
+    "tables.1",
+    "tables.0",
+    "tables.0.schema",
+    "tables.0.partitioning",
+    "tables.0.schema.columns",
+    "tables.0.partitioning.0",
+    "schemas.0",
+    "schemas.0.fields",
+    "schemas.0.fields.0",
+    "schemas",
+    "snapshots",
+    "snapshots.0",
+    "snapshots.1"
+  ],
+  "metadata": {
+    "schema": [],
+    "partition": [],
+    "snapshot": [
+      {
+        "id": "unknown",
+        "timestamp": "N/A",
+        "size": "N/A",
+        "status": "N/A"
+      },
+      {
+        "id": "unknown",
+        "timestamp": "N/A",
+        "size": "N/A",
+        "status": "N/A"
+      }
+    ]
+  }
+}
