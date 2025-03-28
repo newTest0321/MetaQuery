@@ -5,6 +5,7 @@ import "../styles/home.css";
 import { Button } from "@/components/ui/button";
 
 
+
 export default function Home() {
   const phrases = [
     "Seamless Insights, One Query Away",
