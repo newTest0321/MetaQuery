@@ -2,10 +2,12 @@
 
 import { GalleryVerticalEnd } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
+import CustomCursor from "@/components/CustomCursor";
 
 export default function LoginPage() {
   return (
     <div className="static-bg text-white w-screen h-screen flex items-center justify-center">
+      <CustomCursor />
       <div className="grid w-full h-full lg:grid-cols-2 shadow-lg bg-opacity-90 bg-gray-900 backdrop-blur-md">
         
         {/* Right Section - Full Height Background Image */}
