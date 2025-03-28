@@ -66,6 +66,16 @@ export default function S3Viewer() {
   const [versionError, setVersionError] = useState(null);
   const [expandedVersionFiles, setExpandedVersionFiles] = useState(new Set());
 
+  // Add new state for box heights
+  const [boxHeights, setBoxHeights] = useState({});
+  const [isResizing, setIsResizing] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [currentBoxId, setCurrentBoxId] = useState(null);
+
+  // Add new state for line heights
+  const [lineHeights, setLineHeights] = useState({});
+  const [resizingLine, setResizingLine] = useState(null);
+
   // Add version comparison functions
   const handleVersionComparisonClick = () => {
     const newState = {
@@ -148,6 +158,7 @@ export default function S3Viewer() {
       const newLine = newLines[i] || '';
       
       if (oldLine === newLine) {
+        // Lines are identical
         diff.push({
           type: 'unchanged',
           lineNumber: i + 1,
@@ -155,6 +166,7 @@ export default function S3Viewer() {
           newLine: [{ text: newLine, type: 'unchanged' }]
         });
       } else if (!oldLine) {
+        // Line was added
         diff.push({
           type: 'added',
           lineNumber: i + 1,
@@ -162,6 +174,7 @@ export default function S3Viewer() {
           newLine: [{ text: newLine, type: 'added' }]
         });
       } else if (!newLine) {
+        // Line was removed
         diff.push({
           type: 'removed',
           lineNumber: i + 1,
@@ -169,6 +182,7 @@ export default function S3Viewer() {
           newLine: []
         });
       } else {
+        // Line was modified - find specific changes
         const { oldResult, newResult } = findTextDifferences(oldLine, newLine);
         diff.push({
           type: 'modified',
@@ -178,81 +192,71 @@ export default function S3Viewer() {
         });
       }
     }
-
     return diff;
   };
 
   const findTextDifferences = (oldText, newText) => {
-    const oldIndent = oldText.match(/^\s*/)[0];
-    const newIndent = newText.match(/^\s*/)[0];
-    
-    const oldTrimmed = oldText.trimLeft();
-    const newTrimmed = newText.trimLeft();
-    
-    const tokenize = (text) => {
-      return text.match(/\d+|\w+|[^\w\s]/g) || [];
-    };
-
-    const oldTokens = tokenize(oldTrimmed);
-    const newTokens = tokenize(newTrimmed);
-    
-    let oldIndex = 0;
-    let newIndex = 0;
     const oldResult = [];
     const newResult = [];
-    
-    if (oldIndent) oldResult.push({ text: oldIndent, type: 'unchanged' });
-    if (newIndent) newResult.push({ text: newIndent, type: 'unchanged' });
+
+    // Helper function to tokenize the text while preserving special characters and whitespace
+    const tokenize = (text) => {
+      return text.match(/\s+|\w+|[^\s\w]+/g) || [];
+    };
+
+    const oldTokens = tokenize(oldText);
+    const newTokens = tokenize(newText);
+
+    let oldIndex = 0;
+    let newIndex = 0;
     
     while (oldIndex < oldTokens.length || newIndex < newTokens.length) {
+      if (oldIndex >= oldTokens.length) {
+        // All remaining tokens in new are additions
+        newResult.push({ text: newTokens[newIndex], type: 'added' });
+        newIndex++;
+        continue;
+      }
+      
+      if (newIndex >= newTokens.length) {
+        // All remaining tokens in old are removals
+        oldResult.push({ text: oldTokens[oldIndex], type: 'removed' });
+        oldIndex++;
+        continue;
+      }
+
       const oldToken = oldTokens[oldIndex];
       const newToken = newTokens[newIndex];
-      
-      if (!oldToken) {
-        newResult.push({ text: newToken, type: 'added' });
-        newIndex++;
-      } else if (!newToken) {
-        oldResult.push({ text: oldToken, type: 'removed' });
-        oldIndex++;
-      } else if (oldToken === newToken) {
+
+      if (oldToken === newToken) {
+        // Tokens match - unchanged
         oldResult.push({ text: oldToken, type: 'unchanged' });
         newResult.push({ text: newToken, type: 'unchanged' });
         oldIndex++;
         newIndex++;
       } else {
-        if (/^\d+$/.test(oldToken) && /^\d+$/.test(newToken)) {
+        // Try to find the next matching token
+        const oldNextMatch = newTokens.indexOf(oldToken, newIndex);
+        const newNextMatch = oldTokens.indexOf(newToken, oldIndex);
+
+        if (oldNextMatch === -1 && newNextMatch === -1) {
+          // No matches found - treat as replacement
           oldResult.push({ text: oldToken, type: 'removed' });
           newResult.push({ text: newToken, type: 'added' });
+          oldIndex++;
+          newIndex++;
+        } else if (oldNextMatch === -1 || (newNextMatch !== -1 && newNextMatch < oldNextMatch)) {
+          // New token appears later in old - this is an addition
+          newResult.push({ text: newToken, type: 'added' });
+          newIndex++;
         } else {
-          const commonPrefix = findCommonPrefix(oldToken, newToken);
-          const commonSuffix = findCommonSuffix(oldToken, newToken);
-          
-          if (commonPrefix || commonSuffix) {
-            const oldMiddle = oldToken.slice(commonPrefix.length, oldToken.length - commonSuffix.length);
-            const newMiddle = newToken.slice(commonPrefix.length, newToken.length - commonSuffix.length);
-            
-            if (commonPrefix) {
-              oldResult.push({ text: commonPrefix, type: 'unchanged' });
-              newResult.push({ text: commonPrefix, type: 'unchanged' });
-            }
-            
-            if (oldMiddle) oldResult.push({ text: oldMiddle, type: 'removed' });
-            if (newMiddle) newResult.push({ text: newMiddle, type: 'added' });
-            
-            if (commonSuffix) {
-              oldResult.push({ text: commonSuffix, type: 'unchanged' });
-              newResult.push({ text: commonSuffix, type: 'unchanged' });
-            }
-          } else {
-            oldResult.push({ text: oldToken, type: 'removed' });
-            newResult.push({ text: newToken, type: 'added' });
-          }
+          // Old token appears later in new - this is a removal
+          oldResult.push({ text: oldToken, type: 'removed' });
+          oldIndex++;
         }
-        oldIndex++;
-        newIndex++;
       }
     }
-    
+
     return { oldResult, newResult };
   };
 
@@ -1314,6 +1318,69 @@ export default function S3Viewer() {
     }
   }, [isVersionComparisonEnabled]);
 
+  // Add resize handlers
+  const handleResizeStart = (e, boxId) => {
+    setIsResizing(true);
+    setStartY(e.clientY);
+    setCurrentBoxId(boxId);
+    document.body.style.userSelect = 'none';
+  };
+
+  const handleResizeEnd = () => {
+    setIsResizing(false);
+    setCurrentBoxId(null);
+    document.body.style.userSelect = 'auto';
+  };
+
+  const handleResize = (e) => {
+    if (!isResizing || !currentBoxId) return;
+    
+    const deltaY = e.clientY - startY;
+    setBoxHeights(prev => ({
+      ...prev,
+      [currentBoxId]: Math.max(100, (prev[currentBoxId] || 200) + deltaY)
+    }));
+    setStartY(e.clientY);
+  };
+
+  // Add useEffect for resize event listeners
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResize);
+      window.addEventListener('mouseup', handleResizeEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleResize);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [isResizing]);
+
+  // Update the root navigation handler
+  const handleRootClick = () => {
+    handleListFiles("");
+    setShowCards(true);
+    setIsJsonViewerEnabled(false);
+    setIsVersionComparisonEnabled(false);
+    setFileContent(null);
+    setActiveFilter(null);
+    setVersionFiles([]);
+    setComparing(false);
+    setDiffResult(null);
+  };
+
+  // Add function to toggle line expansion
+  const toggleLineExpansion = (lineId) => {
+    setExpandedLines(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(lineId)) {
+        newSet.delete(lineId);
+      } else {
+        newSet.add(lineId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-900 text-white overflow-hidden">
       {/* Sidebar */}
@@ -1639,13 +1706,7 @@ export default function S3Viewer() {
         {/* Breadcrumb Navigation with matched color */}
         <div className="flex items-center px-4 py-2 bg-gray-950 border-b border-gray-700 overflow-x-auto custom-scrollbar-thin">
           <button
-            onClick={() => {
-              handleListFiles("");
-              setShowCards(true);
-              setIsJsonViewerEnabled(false);
-              setFileContent(null);
-              setActiveFilter(null);
-            }}
+            onClick={handleRootClick}
             className="text-gray-400 hover:text-white px-2 py-1 rounded-md hover:bg-gray-700 transition-colors flex items-center cursor-pointer"
           >
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1847,65 +1908,189 @@ export default function S3Viewer() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-6 font-mono text-sm">
-                        <div className="bg-gray-900 rounded-lg p-4 overflow-auto custom-scrollbar">
-                          <div className="space-y-1">
-                            {diffResult.diff.map((change, index) => (
-                              <div
-                                key={`old-${index}`}
-                                className={`flex rounded-lg px-3 py-1.5 min-h-[1.5rem] items-center whitespace-pre ${
-                                  change.type === 'removed' ? 'bg-red-500/10' : ''
-                                }`}
-                              >
-                                <span className="w-8 text-gray-500 select-none mr-4">
-                                  {change.lineNumber}
-                                </span>
-                                <span className="flex flex-wrap">
-                                  {change.oldLine.map((part, partIndex) => (
-                                    <span
-                                      key={partIndex}
-                                      className={
-                                        part.type === 'removed'
-                                          ? 'bg-red-500/20 text-red-400'
-                                          : 'text-gray-300'
-                                      }
+                        <div className="bg-gray-900 rounded-lg overflow-auto custom-scrollbar">
+                          <div className="p-4">
+                            <div className="space-y-1">
+                              {diffResult.diff.map((change, index) => {
+                                const isExpanded = expandedLines.has(`old-${index}`);
+                                const lineContent = change.oldLine.map((part, i) => (
+                                  <span
+                                    key={i}
+                                    className={`${
+                                      part.type === 'removed'
+                                        ? 'bg-red-500/20 text-red-400'
+                                        : 'text-gray-300'
+                                    }`}
+                                  >
+                                    {part.text}
+                                  </span>
+                                ));
+
+                                return (
+                                  <div
+                                    key={`old-${index}`}
+                                    className="relative group"
+                                  >
+                                    <div
+                                      onClick={() => toggleLineExpansion(`old-${index}`)}
+                                      className={`flex rounded-lg px-3 py-1.5 items-center transition-all duration-200 cursor-pointer hover:bg-gray-800 ${
+                                        change.type === 'removed' ? 'bg-red-500/5' : 
+                                        change.type === 'added' ? 'bg-green-500/5' : 
+                                        'bg-transparent'
+                                      }`}
+                                      style={{
+                                        minHeight: '1.5rem',
+                                        height: lineHeights[`old-${index}`] || 'auto',
+                                      }}
                                     >
-                                      {part.text}
-                                    </span>
-                                  ))}
-                                </span>
-                              </div>
-                            ))}
+                                      <span className="w-8 text-gray-500 select-none mr-4 flex-shrink-0">
+                                        {change.lineNumber}
+                                      </span>
+                                      <span className={`flex flex-wrap flex-1 min-w-0 ${
+                                        isExpanded ? 'whitespace-pre-wrap break-all' : 'truncate'
+                                      }`}>
+                                        {isExpanded ? lineContent : (
+                                          <>
+                                            {lineContent}
+                                            {!isExpanded && change.oldLine.join('').length > 50 && (
+                                              <span className="text-gray-500 ml-1">...</span>
+                                            )}
+                                          </>
+                                        )}
+                                      </span>
+                                      {change.oldLine.join('').length > 50 && (
+                                        <span className="ml-2 text-gray-500 text-xs">
+                                          {isExpanded ? 'Click to collapse' : 'Click to expand'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {isExpanded && (
+                                      <div
+                                        className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover:opacity-100 bg-gray-700 hover:bg-purple-500/50 transition-all"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          setResizingLine(`old-${index}`);
+                                          const startY = e.clientY;
+                                          const startHeight = lineHeights[`old-${index}`] || 24;
+
+                                          const handleMouseMove = (e) => {
+                                            const deltaY = e.clientY - startY;
+                                            const newHeight = Math.max(24, startHeight + deltaY);
+                                            setLineHeights(prev => ({
+                                              ...prev,
+                                              [`old-${index}`]: newHeight,
+                                              [`new-${index}`]: newHeight
+                                            }));
+                                          };
+
+                                          const handleMouseUp = () => {
+                                            setResizingLine(null);
+                                            window.removeEventListener('mousemove', handleMouseMove);
+                                            window.removeEventListener('mouseup', handleMouseUp);
+                                          };
+
+                                          window.addEventListener('mousemove', handleMouseMove);
+                                          window.addEventListener('mouseup', handleMouseUp);
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="bg-gray-900 rounded-lg p-4 overflow-auto custom-scrollbar">
-                          <div className="space-y-1">
-                            {diffResult.diff.map((change, index) => (
-                              <div
-                                key={`new-${index}`}
-                                className={`flex rounded-lg px-3 py-1.5 min-h-[1.5rem] items-center whitespace-pre ${
-                                  change.type === 'added' ? 'bg-green-500/10' : ''
-                                }`}
-                              >
-                                <span className="w-8 text-gray-500 select-none mr-4">
-                                  {change.lineNumber}
-                                </span>
-                                <span className="flex flex-wrap">
-                                  {change.newLine.map((part, partIndex) => (
-                                    <span
-                                      key={partIndex}
-                                      className={
-                                        part.type === 'added'
-                                          ? 'bg-green-500/20 text-green-400'
-                                          : 'text-gray-300'
-                                      }
+                        <div className="bg-gray-900 rounded-lg overflow-auto custom-scrollbar">
+                          <div className="p-4">
+                            <div className="space-y-1">
+                              {diffResult.diff.map((change, index) => {
+                                const isExpanded = expandedLines.has(`new-${index}`);
+                                const lineContent = change.newLine.map((part, i) => (
+                                  <span
+                                    key={i}
+                                    className={`${
+                                      part.type === 'added'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'text-gray-300'
+                                    }`}
+                                  >
+                                    {part.text}
+                                  </span>
+                                ));
+
+                                return (
+                                  <div
+                                    key={`new-${index}`}
+                                    className="relative group"
+                                  >
+                                    <div
+                                      onClick={() => toggleLineExpansion(`new-${index}`)}
+                                      className={`flex rounded-lg px-3 py-1.5 items-center transition-all duration-200 cursor-pointer hover:bg-gray-800 ${
+                                        change.type === 'added' ? 'bg-green-500/5' : 
+                                        change.type === 'removed' ? 'bg-red-500/5' : 
+                                        'bg-transparent'
+                                      }`}
+                                      style={{
+                                        minHeight: '1.5rem',
+                                        height: lineHeights[`new-${index}`] || 'auto',
+                                      }}
                                     >
-                                      {part.text}
-                                    </span>
-                                  ))}
-                                </span>
-                              </div>
-                            ))}
+                                      <span className="w-8 text-gray-500 select-none mr-4 flex-shrink-0">
+                                        {change.lineNumber}
+                                      </span>
+                                      <span className={`flex flex-wrap flex-1 min-w-0 ${
+                                        isExpanded ? 'whitespace-pre-wrap break-all' : 'truncate'
+                                      }`}>
+                                        {isExpanded ? lineContent : (
+                                          <>
+                                            {lineContent}
+                                            {!isExpanded && change.newLine.join('').length > 50 && (
+                                              <span className="text-gray-500 ml-1">...</span>
+                                            )}
+                                          </>
+                                        )}
+                                      </span>
+                                      {change.newLine.join('').length > 50 && (
+                                        <span className="ml-2 text-gray-500 text-xs">
+                                          {isExpanded ? 'Click to collapse' : 'Click to expand'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {isExpanded && (
+                                      <div
+                                        className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover:opacity-100 bg-gray-700 hover:bg-purple-500/50 transition-all"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          setResizingLine(`new-${index}`);
+                                          const startY = e.clientY;
+                                          const startHeight = lineHeights[`new-${index}`] || 24;
+
+                                          const handleMouseMove = (e) => {
+                                            const deltaY = e.clientY - startY;
+                                            const newHeight = Math.max(24, startHeight + deltaY);
+                                            setLineHeights(prev => ({
+                                              ...prev,
+                                              [`new-${index}`]: newHeight,
+                                              [`old-${index}`]: newHeight
+                                            }));
+                                          };
+
+                                          const handleMouseUp = () => {
+                                            setResizingLine(null);
+                                            window.removeEventListener('mousemove', handleMouseMove);
+                                            window.removeEventListener('mouseup', handleMouseUp);
+                                          };
+
+                                          window.addEventListener('mousemove', handleMouseMove);
+                                          window.addEventListener('mouseup', handleMouseUp);
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2541,6 +2726,33 @@ export default function S3Viewer() {
           </div>
         </div>
       )}
+
+      {/* Add styles for resize cursor */}
+      <style jsx global>{`
+        .cursor-row-resize {
+          cursor: row-resize;
+        }
+        ${isResizing ? `
+          body * {
+            cursor: row-resize !important;
+            user-select: none !important;
+          }
+        ` : ''}
+      `}</style>
+
+      {/* Add styles for resizing state */}
+      <style jsx global>{`
+        ${resizingLine ? `
+          body * {
+            cursor: row-resize !important;
+            user-select: none !important;
+          }
+        ` : ''}
+        
+        .break-all {
+          word-break: break-all;
+        }
+      `}</style>
     </div>
   );
 }
