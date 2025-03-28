@@ -1,0 +1,27 @@
+{
+    "commitInfo": {
+      "timestamp": 1712000200000,
+      "operation": "MERGE",
+      "operationParameters": {
+        "predicate": "customer_id = 'CUST_001'"
+      },
+      "version": 2
+    },
+    "actions": [
+      {
+        "add": {
+          "path": "data/orders-2025-03-28.parquet",
+          "size": 340000,
+          "partitionValues": { "order_date": "2025-03-28" },
+          "modificationTime": 1712000200000
+        }
+      },
+      {
+        "remove": {
+          "path": "data/orders-2025-03-27.parquet",
+          "modificationTime": 1712000200000
+        }
+      }
+    ]
+  }
+  

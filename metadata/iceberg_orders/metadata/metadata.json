@@ -1,0 +1,33 @@
+{
+    "format-version": 2,
+    "table-uuid": "ecommerce-iceberg-98765",
+    "location": "s3://ecommerce-data/iceberg_orders/",
+    "last-updated-ms": 1712000000000,
+    "schemas": [
+      {
+        "schema-id": 1,
+        "fields": [
+          { "id": 1, "name": "order_id", "type": "string" },
+          { "id": 2, "name": "customer_id", "type": "string" },
+          { "id": 3, "name": "product_id", "type": "string" },
+          { "id": 4, "name": "order_date", "type": "timestamp" },
+          { "id": 5, "name": "status", "type": "string" },
+          { "id": 6, "name": "quantity", "type": "int" },
+          { "id": 7, "name": "total_price", "type": "double" }
+        ]
+      }
+    ],
+    "snapshots": [
+      {
+        "snapshot-id": 123456789,
+        "timestamp-ms": 1712000100000,
+        "manifest-list": "s3://ecommerce-data/iceberg_orders/manifest/manifest-1.avro"
+      },
+      {
+        "snapshot-id": 123456790,
+        "timestamp-ms": 1712000500000,
+        "manifest-list": "s3://ecommerce-data/iceberg_orders/manifest/manifest-2.avro"
+      }
+    ]
+  }
+  

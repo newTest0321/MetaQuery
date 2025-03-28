@@ -1,0 +1,20 @@
+{
+    "version": 2,
+    "add": [
+      {
+        "path": "data/orders-2025-03-28.parquet",
+        "size": 340000,
+        "partitionValues": { "order_date": "2025-03-28" }
+      }
+    ],
+    "metadata": {
+      "schema": [
+        { "name": "order_id", "type": "string" },
+        { "name": "customer_id", "type": "string" },
+        { "name": "status", "type": "string" },
+        { "name": "total_price", "type": "double" }
+      ],
+      "partitionColumns": ["order_date"]
+    }
+  }
+  

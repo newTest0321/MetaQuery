@@ -1,0 +1,10 @@
+{
+  "commitTime": "20250328124000",
+  "operation": "update",
+  "updatedRecords": [
+    {
+      "order_id": "ORD23456",
+      "new_status": "Shipped"
+    }
+  ]
+}

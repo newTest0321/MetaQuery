@@ -1,0 +1,13 @@
+{
+    "commitTime": "20250328123000",
+    "operation": "bulk_insert",
+    "table": "orders",
+    "writeStats": [
+      {
+        "file": "s3://ecommerce-data/hudi_orders/data/orders-2025-03-28.parquet",
+        "recordsWritten": 15000,
+        "partitionPath": "order_date=2025-03-28"
+      }
+    ]
+  }
+  
