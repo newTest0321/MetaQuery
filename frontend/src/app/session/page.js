@@ -31,7 +31,7 @@ export default function S3Viewer() {
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [expandedLines, setExpandedLines] = useState(new Set());
-  const [panelWidth, setPanelWidth] = useState(100); // Start at 100% for main content
+  const [panelWidth, setPanelWidth] = useState(100);
   const [isDragging, setIsDragging] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -39,13 +39,11 @@ export default function S3Viewer() {
   const [showSavedSessions, setShowSavedSessions] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [folderContents, setFolderContents] = useState({});
-  const [isPanelExpanded, setIsPanelExpanded] = useState(false); // New state for panel expansion
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
-  const [userEmail, setUserEmail] = useState("user@example.com"); // You can replace this with actual user email
+  const [userEmail, setUserEmail] = useState("user@example.com");
   const [showCards, setShowCards] = useState(true);
-  // Add new state to track if JSON viewer is enabled
   const [isJsonViewerEnabled, setIsJsonViewerEnabled] = useState(false);
-  // Add new state for navigation history
   const [navigationHistory, setNavigationHistory] = useState([{
     type: 'initial',
     showCards: true,
@@ -56,10 +54,231 @@ export default function S3Viewer() {
     activeFilter: null
   }]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
-  // Add new state variables for Notes
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState([]);
   const [currentNote, setCurrentNote] = useState('');
+  
+  // Add new state variables for version comparison
+  const [isVersionComparisonEnabled, setIsVersionComparisonEnabled] = useState(false);
+  const [versionFiles, setVersionFiles] = useState([]);
+  const [comparing, setComparing] = useState(false);
+  const [diffResult, setDiffResult] = useState(null);
+  const [versionError, setVersionError] = useState(null);
+  const [expandedVersionFiles, setExpandedVersionFiles] = useState(new Set());
+
+  // Add version comparison functions
+  const handleVersionComparisonClick = () => {
+    const newState = {
+      type: 'version_comparison',
+      showCards: false,
+      isJsonViewerEnabled: false,
+      isVersionComparisonEnabled: true,
+      currentPath,
+      fileContent,
+      fileType,
+      activeFilter
+    };
+    addToHistory(newState);
+    setShowCards(false);
+    setIsJsonViewerEnabled(false);
+    setIsVersionComparisonEnabled(true);
+  };
+
+  const toggleVersionFile = (fileId) => {
+    setExpandedVersionFiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileId)) {
+        newSet.delete(fileId);
+      } else {
+        newSet.add(fileId);
+      }
+      return newSet;
+    });
+  };
+
+  const removeVersionFile = (idToRemove) => {
+    setVersionError(null);
+    setVersionFiles(prev => prev.filter(f => f.id !== idToRemove));
+    if (comparing) {
+      setComparing(false);
+      setDiffResult(null);
+    }
+  };
+
+  const compareVersionFiles = () => {
+    setVersionError(null);
+    if (versionFiles.length < 2) {
+      setVersionError("Please upload at least two files to compare");
+      return;
+    }
+
+    // Sort files by timestamp to compare latest two
+    const sortedFiles = [...versionFiles].sort((a, b) => 
+      new Date(b.timestamp) - new Date(a.timestamp)
+    );
+    
+    const file1 = sortedFiles[0];
+    const file2 = sortedFiles[1];
+
+    if (!file1.content || !file2.content) {
+      setVersionError("Still loading file contents...");
+      return;
+    }
+
+    // Generate diff
+    const diff = generateSideBySideDiff(file2.content, file1.content);
+    setDiffResult({
+      diff,
+      oldFile: file1.name,
+      newFile: file2.name,
+      oldContent: file1.content.split('\n'),
+      newContent: file2.content.split('\n')
+    });
+    setComparing(true);
+  };
+
+  const generateSideBySideDiff = (newContent, oldContent) => {
+    const oldLines = oldContent.split('\n');
+    const newLines = newContent.split('\n');
+    const maxLength = Math.max(oldLines.length, newLines.length);
+    const diff = [];
+
+    for (let i = 0; i < maxLength; i++) {
+      const oldLine = oldLines[i] || '';
+      const newLine = newLines[i] || '';
+      
+      if (oldLine === newLine) {
+        diff.push({
+          type: 'unchanged',
+          lineNumber: i + 1,
+          oldLine: [{ text: oldLine, type: 'unchanged' }],
+          newLine: [{ text: newLine, type: 'unchanged' }]
+        });
+      } else if (!oldLine) {
+        diff.push({
+          type: 'added',
+          lineNumber: i + 1,
+          oldLine: [],
+          newLine: [{ text: newLine, type: 'added' }]
+        });
+      } else if (!newLine) {
+        diff.push({
+          type: 'removed',
+          lineNumber: i + 1,
+          oldLine: [{ text: oldLine, type: 'removed' }],
+          newLine: []
+        });
+      } else {
+        const { oldResult, newResult } = findTextDifferences(oldLine, newLine);
+        diff.push({
+          type: 'modified',
+          lineNumber: i + 1,
+          oldLine: oldResult,
+          newLine: newResult
+        });
+      }
+    }
+
+    return diff;
+  };
+
+  const findTextDifferences = (oldText, newText) => {
+    const oldIndent = oldText.match(/^\s*/)[0];
+    const newIndent = newText.match(/^\s*/)[0];
+    
+    const oldTrimmed = oldText.trimLeft();
+    const newTrimmed = newText.trimLeft();
+    
+    const tokenize = (text) => {
+      return text.match(/\d+|\w+|[^\w\s]/g) || [];
+    };
+
+    const oldTokens = tokenize(oldTrimmed);
+    const newTokens = tokenize(newTrimmed);
+    
+    let oldIndex = 0;
+    let newIndex = 0;
+    const oldResult = [];
+    const newResult = [];
+    
+    if (oldIndent) oldResult.push({ text: oldIndent, type: 'unchanged' });
+    if (newIndent) newResult.push({ text: newIndent, type: 'unchanged' });
+    
+    while (oldIndex < oldTokens.length || newIndex < newTokens.length) {
+      const oldToken = oldTokens[oldIndex];
+      const newToken = newTokens[newIndex];
+      
+      if (!oldToken) {
+        newResult.push({ text: newToken, type: 'added' });
+        newIndex++;
+      } else if (!newToken) {
+        oldResult.push({ text: oldToken, type: 'removed' });
+        oldIndex++;
+      } else if (oldToken === newToken) {
+        oldResult.push({ text: oldToken, type: 'unchanged' });
+        newResult.push({ text: newToken, type: 'unchanged' });
+        oldIndex++;
+        newIndex++;
+      } else {
+        if (/^\d+$/.test(oldToken) && /^\d+$/.test(newToken)) {
+          oldResult.push({ text: oldToken, type: 'removed' });
+          newResult.push({ text: newToken, type: 'added' });
+        } else {
+          const commonPrefix = findCommonPrefix(oldToken, newToken);
+          const commonSuffix = findCommonSuffix(oldToken, newToken);
+          
+          if (commonPrefix || commonSuffix) {
+            const oldMiddle = oldToken.slice(commonPrefix.length, oldToken.length - commonSuffix.length);
+            const newMiddle = newToken.slice(commonPrefix.length, newToken.length - commonSuffix.length);
+            
+            if (commonPrefix) {
+              oldResult.push({ text: commonPrefix, type: 'unchanged' });
+              newResult.push({ text: commonPrefix, type: 'unchanged' });
+            }
+            
+            if (oldMiddle) oldResult.push({ text: oldMiddle, type: 'removed' });
+            if (newMiddle) newResult.push({ text: newMiddle, type: 'added' });
+            
+            if (commonSuffix) {
+              oldResult.push({ text: commonSuffix, type: 'unchanged' });
+              newResult.push({ text: commonSuffix, type: 'unchanged' });
+            }
+          } else {
+            oldResult.push({ text: oldToken, type: 'removed' });
+            newResult.push({ text: newToken, type: 'added' });
+          }
+        }
+        oldIndex++;
+        newIndex++;
+      }
+    }
+    
+    return { oldResult, newResult };
+  };
+
+  const findCommonPrefix = (str1, str2) => {
+    let prefix = '';
+    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+      if (str1[i] === str2[i]) {
+        prefix += str1[i];
+      } else {
+        break;
+      }
+    }
+    return prefix;
+  };
+
+  const findCommonSuffix = (str1, str2) => {
+    let suffix = '';
+    for (let i = 1; i <= Math.min(str1.length, str2.length); i++) {
+      if (str1[str1.length - i] === str2[str2.length - i]) {
+        suffix = str1[str1.length - i] + suffix;
+      } else {
+        break;
+      }
+    }
+    return suffix;
+  };
 
   useEffect(() => {
     localStorage.removeItem("savedSession");
@@ -1005,6 +1224,65 @@ export default function S3Viewer() {
     setCurrentNote('');
   };
 
+  // Add file upload handlers
+  const handleFileUpload = (event) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newFile = {
+          id: Math.random().toString(36).substring(7),
+          name: file.name,
+          content: reader.result,
+          timestamp: new Date().toISOString()
+        };
+        setVersionFiles(prev => [...prev, newFile]);
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const files = event.dataTransfer.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newFile = {
+          id: Math.random().toString(36).substring(7),
+          name: file.name,
+          content: reader.result,
+          timestamp: new Date().toISOString()
+        };
+        setVersionFiles(prev => [...prev, newFile]);
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  // Add useEffect for version comparison
+  useEffect(() => {
+    if (isVersionComparisonEnabled) {
+      // Reset version comparison state when enabled
+      setVersionFiles([]);
+      setComparing(false);
+      setDiffResult(null);
+      setVersionError(null);
+      setExpandedVersionFiles(new Set());
+    }
+  }, [isVersionComparisonEnabled]);
+
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-900 text-white overflow-hidden">
       {/* Sidebar */}
@@ -1390,66 +1668,262 @@ export default function S3Viewer() {
             </button>
 
             <div className="flex-1 h-[calc(100vh-8rem)] overflow-hidden bg-gray-900">
-        {fileContent && isJsonViewerEnabled ? (
-          fileType === "json" ? (
-            <div className="h-full rounded-lg bg-gray-800/80 p-4 overflow-auto custom-scrollbar">
-              <CustomJsonView data={fileContent} />
-            </div>
-          ) : (
-            <pre className="h-full overflow-auto text-white text-base whitespace-pre-wrap break-words font-mono bg-gray-800/80 p-4 rounded-lg custom-scrollbar">
-              {fileContent}
-            </pre>
-          )
-        ) : (
-          showCards ? (
-            <div className="h-full flex items-center justify-center p-8">
-              <div className="grid grid-cols-2 gap-8 w-full max-w-4xl">
-                {/* View JSON File Card */}
-                <div 
-                  onClick={handleViewJsonClick}
-                  className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-purple-500/10 hover:-translate-y-1 cursor-pointer"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative">
-                    <div className="flex items-center justify-center mb-6">
-                      <svg className="w-16 h-16 text-purple-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-semibold text-center text-white mb-3">View JSON File</h3>
-                    <p className="text-gray-400 text-center text-sm">Select a JSON file from the sidebar to view and analyze its contents</p>
+          {fileContent && isJsonViewerEnabled ? (
+            fileType === "json" ? (
+              <div className="h-full rounded-lg bg-gray-800/80 p-4 overflow-auto custom-scrollbar">
+                <CustomJsonView data={fileContent} />
+              </div>
+            ) : (
+              <pre className="h-full overflow-auto text-white text-base whitespace-pre-wrap break-words font-mono bg-gray-800/80 p-4 rounded-lg custom-scrollbar">
+                {fileContent}
+              </pre>
+            )
+          ) : isVersionComparisonEnabled ? (
+            <div className="h-full flex flex-col bg-gray-800/80 p-6 overflow-hidden">
+              {/* Version Comparison Header */}
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-200">Version Comparison</h2>
+                  <p className="text-gray-400 mt-1">Compare different versions of your files</p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="px-4 py-2 bg-red-500/10 rounded-lg border border-red-500/20">
+                    <p className="text-sm text-red-400">Removed</p>
                   </div>
+                  <div className="px-4 py-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <p className="text-sm text-green-400">Added</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* File List */}
+              <div className="flex-1 overflow-y-auto mb-6">
+                {/* File Upload Component */}
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  className="mb-6 p-6 border-2 border-dashed border-gray-600 rounded-xl hover:border-purple-500/50 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="version-file-upload"
+                  />
+                  <label
+                    htmlFor="version-file-upload"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <svg className="w-12 h-12 text-purple-500/80 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="text-gray-300 text-center">
+                      Drag and drop files here or click to select files
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Upload at least two files to compare
+                    </p>
+                  </label>
                 </div>
 
-                {/* Version Comparison Card */}
-                <div className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative">
-                    <div className="flex items-center justify-center mb-6">
-                      <svg className="w-16 h-16 text-blue-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                      </svg>
+                {versionFiles.map((file, index) => (
+                  <div
+                    key={file.id}
+                    className={`mb-4 bg-gray-700/50 rounded-xl border border-gray-600 hover:bg-gray-700/70 transition-all group ${
+                      expandedVersionFiles.has(file.id) ? 'bg-purple-500/10 border-purple-500/30' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-200">{file.name}</p>
+                          <p className="text-sm text-gray-400">
+                            {new Date(file.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleVersionFile(file.id)}
+                          className="text-purple-400 hover:text-purple-300 transition-colors p-2 rounded-lg hover:bg-purple-500/10"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedVersionFiles.has(file.id) ? "M6 18L18 6M6 6l12 12" : "M19 9l-7 7-7-7"} />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => removeVersionFile(file.id)}
+                          className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-center text-white mb-3">Version Comparison</h3>
-                    <p className="text-gray-400 text-center text-sm">Compare different versions of your files to track changes and updates</p>
+                    {expandedVersionFiles.has(file.id) && file.content && (
+                      <div className="px-4 pb-4">
+                        <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                          <pre className="text-sm font-mono text-gray-300 whitespace-pre-wrap">
+                            {file.content}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Compare Button */}
+              {versionFiles.length >= 2 && (
+                <button
+                  onClick={compareVersionFiles}
+                  className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  Compare Files
+                </button>
+              )}
+
+              {/* Error Message */}
+              {versionError && (
+                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-red-400">{versionError}</p>
+                </div>
+              )}
+
+              {/* Diff Result */}
+              {comparing && diffResult && (
+                <div className="mt-6 bg-gray-700/50 rounded-xl p-6 border border-gray-600">
+                  <div className="mb-6 flex justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                      <p className="text-sm text-gray-400">
+                        Old Version: {diffResult.oldFile}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                      <p className="text-sm text-gray-400">
+                        New Version: {diffResult.newFile}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6 font-mono text-sm">
+                    <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <div className="space-y-1">
+                        {diffResult.diff.map((change, index) => (
+                          <div
+                            key={`old-${index}`}
+                            className={`flex rounded-lg px-3 py-1.5 min-h-[1.5rem] items-center whitespace-pre ${
+                              change.type === 'removed' ? 'bg-red-500/10' : ''
+                            }`}
+                          >
+                            <span className="w-8 text-gray-500 select-none mr-4">
+                              {change.lineNumber}
+                            </span>
+                            <span className="flex flex-wrap">
+                              {change.oldLine.map((part, partIndex) => (
+                                <span
+                                  key={partIndex}
+                                  className={
+                                    part.type === 'removed'
+                                      ? 'bg-red-500/20 text-red-400'
+                                      : 'text-gray-300'
+                                  }
+                                >
+                                  {part.text}
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <div className="space-y-1">
+                        {diffResult.diff.map((change, index) => (
+                          <div
+                            key={`new-${index}`}
+                            className={`flex rounded-lg px-3 py-1.5 min-h-[1.5rem] items-center whitespace-pre ${
+                              change.type === 'added' ? 'bg-green-500/10' : ''
+                            }`}
+                          >
+                            <span className="w-8 text-gray-500 select-none mr-4">
+                              {change.lineNumber}
+                            </span>
+                            <span className="flex flex-wrap">
+                              {change.newLine.map((part, partIndex) => (
+                                <span
+                                  key={partIndex}
+                                  className={
+                                    part.type === 'added'
+                                      ? 'bg-green-500/20 text-green-400'
+                                      : 'text-gray-300'
+                                  }
+                                >
+                                  {part.text}
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            showCards ? (
+              <div className="h-full flex items-center justify-center p-8">
+                <div className="grid grid-cols-2 gap-8 w-full max-w-4xl">
+                  {/* View JSON File Card */}
+                  <div 
+                    onClick={handleViewJsonClick}
+                    className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-purple-500/10 hover:-translate-y-1 cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative">
+                      <div className="flex items-center justify-center mb-6">
+                        <svg className="w-16 h-16 text-purple-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-center text-white mb-3">View JSON File</h3>
+                      <p className="text-gray-400 text-center text-sm">Select a JSON file from the sidebar to view and analyze its contents</p>
+                    </div>
+                  </div>
+
+                  {/* Version Comparison Card */}
+                  <div
+                    onClick={handleVersionComparisonClick}
+                    className="group relative bg-gray-800/80 rounded-xl p-6 shadow-2xl border border-gray-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-purple-500/10 hover:-translate-y-1 cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative">
+                      <div className="flex items-center justify-center mb-6">
+                        <svg className="w-16 h-16 text-purple-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-center text-white mb-3">Version Comparison</h3>
+                      <p className="text-gray-400 text-center text-sm">Compare different versions of your files to track changes</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center transform transition-all duration-300 hover:scale-105">
-                <div className="bg-gray-800/80 rounded-xl p-8 shadow-2xl border border-gray-700">
-                  <svg className="w-24 h-24 mx-auto mb-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-xl text-gray-300 font-medium">Select a file to view its contents</p>
-                  <p className="mt-2 text-gray-500 text-sm">Choose a file from the sidebar to get started</p>
-                </div>
-              </div>
-            </div>
-          )
-        )}
+            ) : null
+          )}
             </div>
       </div>
 
