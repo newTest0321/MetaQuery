@@ -3,6 +3,7 @@
 import { GalleryVerticalEnd } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 import { useEffect, useRef } from "react";
+import CustomCursor from "@/components/CustomCursor";
 
 function AnimatedBackground() {
   const canvasRef = useRef(null);

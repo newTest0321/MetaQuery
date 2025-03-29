@@ -3,6 +3,7 @@
 import { GalleryVerticalEnd } from "lucide-react";
 import { SignupForm } from "@/components/signup-form";
 import { useEffect, useRef } from "react";
+import CustomCursor from "@/components/CustomCursor";
 
 function AnimatedBackground() {
   const canvasRef = useRef(null);
@@ -170,7 +171,9 @@ function AnimatedBackground() {
 export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center relative">
+       <CustomCursor />
       <AnimatedBackground />
+      <CustomCursor />
       
       <div className="w-full max-w-4xl mx-auto p-4">
         <div className="grid w-full h-full lg:grid-cols-2 shadow-lg bg-gray-900/30 backdrop-blur-xl rounded-xl border border-white/10">
