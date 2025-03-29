@@ -535,65 +535,98 @@ export default function Versioning() {
           </div>
 
           {/* Content Layout */}
-          <div className="grid grid-cols-3 gap-8">
+          <div className={`relative ${files.length > 0 ? 'grid grid-cols-3 gap-8' : ''}`}>
             {/* File List - Left 2/3 */}
-            <div className="col-span-2 space-y-4">
-              {files.map((file) => (
-                <motion.div
-                  key={file.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`h-[100px] bg-white/5 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/10 transition-all group ${
-                    expandedFiles.has(file.id) ? 'bg-purple-500/10 border-purple-500/30' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+            {files.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  duration: 0.8,
+                  ease: [0.4, 0, 0.2, 1],
+                  delay: 0.2
+                }}
+                className="col-span-2 space-y-4"
+              >
+                {files.map((file, index) => (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.6,
+                      ease: [0.4, 0, 0.2, 1],
+                      delay: 0.3 + (index * 0.1)
+                    }}
+                    className={`h-[100px] bg-white/5 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/10 transition-all group ${
+                      expandedFiles.has(file.id) ? 'bg-purple-500/10 border-purple-500/30' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-200">{file.name}</p>
+                          <p className="text-sm text-gray-400">
+                            {new Date(file.timestamp).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-200">{file.name}</p>
-                        <p className="text-sm text-gray-400">
-                          {new Date(file.timestamp).toLocaleString()}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => toggleFile(file.id)}
+                          className="text-purple-400 hover:text-purple-300 transition-colors p-2 rounded-lg hover:bg-purple-500/10"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedFiles.has(file.id) ? "M6 18L18 6M6 6l12 12" : "M19 9l-7 7-7-7"} />
+                          </svg>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => removeFile(file.id)}
+                          className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </motion.button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => toggleFile(file.id)}
-                        className="text-purple-400 hover:text-purple-300 transition-colors p-2 rounded-lg hover:bg-purple-500/10"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedFiles.has(file.id) ? "M6 18L18 6M6 6l12 12" : "M19 9l-7 7-7-7"} />
-                        </svg>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => removeFile(file.id)}
-                        className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-500/10"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
-            {/* Dropzone - Right 1/3 */}
-            <div className="col-span-1">
+            {/* Dropzone - Right 1/3 or Center when no files */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+                x: files.length > 0 ? 'calc(-5.666% + 1rem)' : 0
+              }}
+              transition={{ 
+                duration: 1.5,
+                ease: [0.4, 0, 0.2, 1],
+                delay: 0.2,
+                x: {
+                  duration: 1.8,
+                  ease: [0.4, 0, 0.2, 1],
+                  type: "spring",
+                  stiffness: 100,
+                  damping: 40
+                }
+              }}
+              className={`${files.length > 0 ? 'col-span-1' : 'mx-auto w-full max-w-[500px]'}`}
+            >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
                 {...getRootProps()}
                 className={`h-[204px] border-2 border-dashed rounded-xl p-8 text-center transition-all backdrop-blur-md flex flex-col items-center justify-center ${
                   isDragActive
@@ -608,7 +641,11 @@ export default function Versioning() {
                       scale: isDragActive ? 1.1 : 1,
                       rotate: isDragActive ? 5 : 0
                     }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 100,
+                      damping: 20
+                    }}
                   >
                     <svg
                       className="w-12 h-12 mb-4 text-purple-400"
@@ -624,17 +661,25 @@ export default function Versioning() {
                       />
                     </svg>
                   </motion.div>
-                  <p className="text-lg text-gray-200 font-medium">
+                  <motion.p 
+                    className="text-lg text-gray-200 font-medium"
+                    animate={{ y: isDragActive ? -2 : 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  >
                     {isDragActive
                       ? "Drop the files here..."
                       : "Drag & drop files here"}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-2">
+                  </motion.p>
+                  <motion.p 
+                    className="text-sm text-gray-400 mt-2"
+                    animate={{ opacity: isDragActive ? 0.8 : 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  >
                     or click to select files
-                  </p>
+                  </motion.p>
                 </div>
               </motion.div>
-            </div>
+            </motion.div>
           </div>
 
           {/* File Content Display Section */}
@@ -646,6 +691,10 @@ export default function Versioning() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
+                    transition={{
+                      duration: 0.6,
+                      ease: [0.4, 0, 0.2, 1]
+                    }}
                     className="mb-8"
                   >
                     <div className="flex items-center justify-between mb-4">
@@ -681,6 +730,11 @@ export default function Versioning() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={compareFiles}
+              transition={{
+                duration: 1,
+                ease: [0.4, 0, 0.2, 1],
+                delay: 0.4
+              }}
               className="w-full mt-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
