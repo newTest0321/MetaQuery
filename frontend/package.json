@@ -29,6 +29,7 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "tailwind-merge": "^3.0.2",
+    "trino-client": "^0.2.6",
     "tw-animate-css": "^1.2.4"
   },
   "devDependencies": {

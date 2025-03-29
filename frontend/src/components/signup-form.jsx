@@ -20,16 +20,24 @@ export function SignupForm({ className, ...props }) {
     try {
       const response = await fetch("http://localhost:8000/auth/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Signup failed");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Signup failed");
+      }
 
+      const data = await response.json();
       console.log("Signup successful:", data);
       router.push("/login"); // Redirect to login page after signup
     } catch (err) {
+      console.error("Signup error:", err);
       setError(err.message);
     }
   };
@@ -41,48 +49,65 @@ export function SignupForm({ className, ...props }) {
       onSubmit={handleSubmit}
     >
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Create your account</h1>
-        <p className="text-muted-foreground text-sm">
-          Enter your email below to create your account
-        </p>
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl text-white">
+            Join{" "}
+            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent">
+              MetaQuery
+            </span>
+          </h1>
+          <p className="text-sm text-white">
+            Start your journey with us
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email" className="text-sm font-medium text-blue-200">
+            Email Address
+          </Label>
           <Input
             id="email"
             type="email"
-            placeholder="example@gmail.com"
+            placeholder="Enter your email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="bg-gray-800/50 border-gray-700 text-blue-100 placeholder:text-blue-300/50 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
         <div className="grid gap-3">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password" className="text-sm font-medium text-blue-200">
+            Password
+          </Label>
           <Input
             id="password"
             type="password"
             required
-            placeholder="************"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="bg-gray-800/50 border-gray-700 text-blue-100 placeholder:text-blue-300/50 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && (
+          <p className="text-red-400 text-sm font-medium bg-red-500/10 p-2 rounded-md">
+            {error}
+          </p>
+        )}
 
-        <Button type="submit" className="w-full">
-          Sign Up
+        <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-medium">
+          Create Account
         </Button>
       </div>
 
-      <div className="text-center text-sm">
+      <div className="text-center text-sm text-blue-200">
         Already have an account?{" "}
-        <a href="/login" className="underline underline-offset-4">
-          Login
+        <a href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+          Sign in here
         </a>
       </div>
     </form>
