@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import "../styles/home.css";
 import { Button } from "@/components/ui/button";
+import VideoModal from "@/components/VideoModal";
+import { FiHelpCircle, FiHeadphones, FiMoreHorizontal, FiPlus, FiMinus } from 'react-icons/fi';
 
 export default function Home() {
   const phrases = [
@@ -119,13 +121,66 @@ export default function Home() {
     }, 500);
   }, []);
 
-  // Update useEffect to properly handle image list items
+  // Add new handler for tutorial section
+  const handleTutorialHover = useCallback((e) => {
+    if (!outlineRef.current || !dotRef.current) return;
+    
+    isImageTransformRef.current = true;
+    
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // Smooth position update
+    const updatePosition = () => {
+      if (!outlineRef.current || !dotRef.current) return;
+      
+      outlineRef.current.style.left = `${x}px`;
+      outlineRef.current.style.top = `${y}px`;
+      dotRef.current.style.left = `${x}px`;
+      dotRef.current.style.top = `${y}px`;
+    };
+    
+    // Add transform classes with RAF for smooth transition
+    requestAnimationFrame(() => {
+      updatePosition();
+      outlineRef.current.classList.add('eye-transform');
+      dotRef.current.classList.add('eye-transform');
+      
+      // Add active class in next frame for smooth transition
+      requestAnimationFrame(() => {
+        if (outlineRef.current) {
+          outlineRef.current.classList.add('active');
+        }
+      });
+    });
+  }, []);
+
+  const handleTutorialLeave = useCallback(() => {
+    if (!outlineRef.current || !dotRef.current) return;
+    
+    // Remove active class first
+    outlineRef.current.classList.remove('active');
+    
+    // Remove transform classes after transition
+    setTimeout(() => {
+      isImageTransformRef.current = false;
+      if (outlineRef.current) {
+        outlineRef.current.classList.remove('eye-transform');
+      }
+      if (dotRef.current) {
+        dotRef.current.classList.remove('eye-transform');
+      }
+    }, 400); // Match the transition duration from CSS
+  }, []);
+
+  // Update useEffect to include tutorial section handlers
   useEffect(() => {
     rafRef.current = requestAnimationFrame(animateCursor);
     
     document.addEventListener('mousemove', handleMouseMove, { passive: true });
     const interactiveElements = document.querySelectorAll('a, button, [role="button"]');
     const imageListItems = document.querySelectorAll('.image-list-item');
+    const tutorialSection = document.querySelector('.tutorial-cursor-area');
     
     // Store event handlers for cleanup
     const eventHandlers = new Map();
@@ -134,6 +189,12 @@ export default function Home() {
       element.addEventListener('mouseenter', handleMouseEnter, { passive: true });
       element.addEventListener('mouseleave', handleMouseLeave, { passive: true });
     });
+
+    // Add tutorial section handlers
+    if (tutorialSection) {
+      tutorialSection.addEventListener('mousemove', handleTutorialHover, { passive: true });
+      tutorialSection.addEventListener('mouseleave', handleTutorialLeave, { passive: true });
+    }
 
     // Update event listeners for image list items
     imageListItems.forEach(item => {
@@ -172,11 +233,15 @@ export default function Home() {
       }
       document.removeEventListener('mousemove', handleMouseMove);
       
-      // Cleanup interactive elements
       interactiveElements.forEach(element => {
         element.removeEventListener('mouseenter', handleMouseEnter);
         element.removeEventListener('mouseleave', handleMouseLeave);
       });
+
+      if (tutorialSection) {
+        tutorialSection.removeEventListener('mousemove', handleTutorialHover);
+        tutorialSection.removeEventListener('mouseleave', handleTutorialLeave);
+      }
 
       // Cleanup image list items using stored handlers
       imageListItems.forEach(item => {
@@ -188,7 +253,7 @@ export default function Home() {
         }
       });
     };
-  }, [animateCursor, handleMouseMove, handleMouseEnter, handleMouseLeave, handleImageHover, handleImageLeave]);
+  }, [animateCursor, handleMouseMove, handleMouseEnter, handleMouseLeave, handleImageHover, handleImageLeave, handleTutorialHover, handleTutorialLeave]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -264,8 +329,113 @@ export default function Home() {
     return () => observer.disconnect();
   }, [isLogoSectionVisible]);
 
+  const [videoModal, setVideoModal] = useState({
+    isOpen: false,
+    videoSrc: "",
+    title: ""
+  });
+
+  const handleOpenVideo = (videoSrc, title) => {
+    setVideoModal({
+      isOpen: true,
+      videoSrc,
+      title
+    });
+  };
+
+  const handleCloseVideo = () => {
+    setVideoModal({
+      isOpen: false,
+      videoSrc: "",
+      title: ""
+    });
+  };
+
+  // Add this state near the other state declarations at the top
+  const [isVideoPopupOpen, setIsVideoPopupOpen] = useState(false);
+  const [activeVideo, setActiveVideo] = useState(null);
+
+  // Add this function near the other handlers
+  const handleVideoClick = (videoSrc, posterSrc) => {
+    setActiveVideo({ src: videoSrc, poster: posterSrc });
+    setIsVideoPopupOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseVideoPopup = () => {
+    setIsVideoPopupOpen(false);
+    setActiveVideo(null);
+    document.body.style.overflow = 'auto';
+  };
+
+  // Add this useEffect near the other useEffect hooks
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && isVideoPopupOpen) {
+        handleCloseVideoPopup();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [isVideoPopupOpen]);
+
+  const faqCategories = [
+    { id: 'general', label: 'General', icon: FiHelpCircle },
+    { id: 'support', label: 'Support', icon: FiHeadphones },
+    { id: 'others', label: 'Others', icon: FiMoreHorizontal }
+  ];
+
+  const faqData = {
+    general: [
+      {
+        question: 'How to create an account?',
+        answer: 'Creating an account is simple. Click on the "Sign Up" button in the top right corner, fill in your details, and follow the verification process. You\'ll be up and running in minutes.'
+      },
+      {
+        question: 'What features are included in the free plan?',
+        answer: 'Our free plan includes basic data exploration, limited queries per day, and access to public datasets. For advanced features like custom integrations and unlimited queries, check out our premium plans.'
+      }
+    ],
+    support: [
+      {
+        question: 'How can I reset my password?',
+        answer: 'To reset your password, click on the "Forgot Password" link on the login page. Enter your email address, and we\'ll send you instructions to create a new password.'
+      },
+      {
+        question: 'What is the payment process?',
+        answer: 'We accept all major credit cards and PayPal. Payments are processed securely through Stripe. You can choose monthly or annual billing, with annual plans offering a 20% discount.'
+      }
+    ],
+    others: [
+      {
+        question: 'Can I export my query results?',
+        answer: 'Yes, you can export query results in multiple formats including CSV, JSON, and Excel. Premium users also have access to automated exports and API integration.'
+      },
+      {
+        question: 'Is there a limit on database size?',
+        answer: 'Free plans have a 5GB limit. Premium plans start at 100GB and can be customized based on your needs. Contact our sales team for enterprise solutions.'
+      }
+    ]
+  };
+
+  const [activeCategory, setActiveCategory] = useState('general');
+  const [activeFaq, setActiveFaq] = useState(null);
+
+  const handleFaqClick = (index) => {
+    setActiveFaq(activeFaq === index ? null : index);
+  };
+
   return (
     <div className="relative min-h-screen w-full flex flex-col">
+      {/* Video Modal */}
+      <VideoModal 
+        isOpen={videoModal.isOpen}
+        onClose={handleCloseVideo}
+        videoSrc={videoModal.videoSrc}
+        title={videoModal.title}
+      />
+
       {/* Custom Cursor */}
       <div
         ref={dotRef}
@@ -341,29 +511,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Additional Content Sections */}
-        <section className="min-h-screen py-20 px-5 blur-section">
-          <div className="max-w-6xl mx-auto content-section p-8 rounded-xl">
-            <div className="interactive-content">
-              <h2 className="text-4xl font-bold text-white mb-8 text-center text-content">Why Choose MetaQuery?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-white/10 backdrop-blur-md p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold text-white mb-4 text-content">Unified Experience</h3>
-                  <p className="text-gray-300 text-content">Access all your data sources through a single, intuitive interface.</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold text-white mb-4 text-content">Powerful Analytics</h3>
-                  <p className="text-gray-300 text-content">Advanced querying capabilities across multiple data formats.</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold text-white mb-4 text-content">Seamless Integration</h3>
-                  <p className="text-gray-300 text-content">Works with your existing data infrastructure without disruption.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Data Lake Formats Section */}
         <section className="image-list-section blur-section">
           <div className="image-list-container">
@@ -409,65 +556,208 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Cloud Partners Logo Scroll */}
-        <section ref={logoSectionRef} className="logo-scroll-section py-12 blur-section">
+        {/* Logo Scroll Section */}
+        <section ref={logoSectionRef} className="logo-scroll-section">
           <div className="logo-scroll-container">
             <h2 className={`logo-scroll-heading ${isLogoSectionVisible ? 'visible' : ''}`}>
-              Supported Cloud Platforms
+              Supports multiple Cloud Providers
             </h2>
             <div className={`logo-scroll-track ${isLogoSectionVisible ? 'visible' : ''}`}>
-              {/* First set of logos */}
               <div className="logo-scroll-content">
+                {/* First set of logos */}
                 <div className="logo-item">
-                  <img src="/cloud-logos/aws.png" alt="Amazon Web Services" />
+                  <img src="/cloud-logos/aws.png" alt="AWS" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/azure.png" alt="Microsoft Azure" />
+                  <img src="/cloud-logos/azure.png" alt="Azure" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/gcp.png" alt="Google Cloud Platform" />
+                  <img src="/cloud-logos/gcp.png" alt="Google Cloud" />
                 </div>
                 <div className="logo-item">
                   <img src="/cloud-logos/ibm.png" alt="IBM Cloud" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/oracle.png" alt="Oracle Cloud" />
+                  <img src="/cloud-logos/digitalocean.png" alt="DigitalOcean" />
+                </div>
+                {/* Duplicate set for seamless scrolling */}
+                <div className="logo-item">
+                  <img src="/cloud-logos/aws.png" alt="AWS" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/digitalocean.png" alt="Digital Ocean" />
+                  <img src="/cloud-logos/azure.png" alt="Azure" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/linode.png" alt="Linode" />
-                </div>
-              </div>
-              {/* Duplicate set for seamless loop */}
-              <div className="logo-scroll-content">
-                <div className="logo-item">
-                  <img src="/cloud-logos/aws.png" alt="Amazon Web Services" />
-                </div>
-                <div className="logo-item">
-                  <img src="/cloud-logos/azure.png" alt="Microsoft Azure" />
-                </div>
-                <div className="logo-item">
-                  <img src="/cloud-logos/gcp.png" alt="Google Cloud Platform" />
+                  <img src="/cloud-logos/gcp.png" alt="Google Cloud" />
                 </div>
                 <div className="logo-item">
                   <img src="/cloud-logos/ibm.png" alt="IBM Cloud" />
                 </div>
                 <div className="logo-item">
-                  <img src="/cloud-logos/oracle.png" alt="Oracle Cloud" />
-                </div>
-                <div className="logo-item">
-                  <img src="/cloud-logos/digitalocean.png" alt="Digital Ocean" />
-                </div>
-                <div className="logo-item">
-                  <img src="/cloud-logos/linode.png" alt="Linode" />
+                  <img src="/cloud-logos/digitalocean.png" alt="DigitalOcean" />
                 </div>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Netflix-style Section - Mobile */}
+        <section className="netflix-section">
+          <div className="netflix-container">
+            <div className="netflix-image" onClick={() => handleVideoClick("/videos/getting-started.mp4", "/mobile.png")}>
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-auto rounded-lg"
+                poster="/mobile.png"
+              >
+                <source src="/videos/getting-started.mp4" type="video/mp4" />
+              </video>
+            </div>
+            <div className="netflix-text">
+              <h2 className="netflix-title">Uncover Metadata</h2>
+              <p className="netflix-subtitle">Dive into your S3 bucket and reveal hidden insights.
+              Navigate effortlessly.</p>
+              <Link href="/dashboard" className="netflix-button">
+                Start Exploring 
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Netflix-style Section - TV */}
+        <section className="netflix-section">
+          <div className="netflix-container">
+            <div className="netflix-text">
+              <h2 className="netflix-title">Spot the Differences</h2>
+              <p className="netflix-subtitle">Compare metadata files like a pro.
+              Track changes with precision.</p>
+              <Link href="/dashboard" className="netflix-button">
+                Compare Now
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="netflix-image" onClick={() => handleVideoClick("/videos/getting-started.mp4", "/tv.png")}>
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-auto rounded-lg"
+                poster="/tv.png"
+              >
+                <source src="/videos/getting-started.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+        </section>
+
+        {/* Netflix-style Section - Devices */}
+        <section className="netflix-section">
+          <div className="netflix-container">
+            <div className="netflix-image" onClick={() => handleVideoClick("/videos/getting-started.mp4", "/devices.png")}>
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-auto rounded-lg"
+                poster="/devices.png"
+              >
+                <source src="/videos/getting-started.mp4" type="video/mp4" />
+              </video>
+            </div>
+            <div className="netflix-text">
+              <h2 className="netflix-title">Extract & Share</h2>
+              <p className="netflix-subtitle">Export metadata in a snap.
+              Collaborate without limits.</p>
+              <Link href="/dashboard" className="netflix-button">
+                Get Started 
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="faq-section">
+          <div className="faq-container">
+            <div className="faq-header">
+              <span className="faq-label">FAQ</span>
+              <h2 className="faq-title">Frequently Asked Questions</h2>
+            </div>
+            
+            <div className="faq-content">
+              <div className="faq-categories">
+                {faqCategories.map(category => (
+                  <button
+                    key={category.id}
+                    className={`faq-category-btn ${activeCategory === category.id ? 'active' : ''}`}
+                    onClick={() => setActiveCategory(category.id)}
+                  >
+                    <category.icon className="category-icon" />
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="faq-questions">
+                {faqData[activeCategory].map((faq, index) => (
+                  <div key={index} className="faq-item">
+                    <div
+                      className={`faq-question ${activeFaq === index ? 'active' : ''}`}
+                      onClick={() => handleFaqClick(index)}
+                    >
+                      <span>{faq.question}</span>
+                      <span className="faq-toggle">
+                        {activeFaq === index ? <FiMinus /> : <FiPlus />}
+                      </span>
+                    </div>
+                    <div className={`faq-answer ${activeFaq === index ? 'active' : ''}`}>
+                      {faq.answer}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* Video Popup Modal */}
+      <div 
+        className={`video-popup-overlay ${isVideoPopupOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleCloseVideoPopup();
+          }
+        }}
+      >
+        <div className="video-popup-content">
+          <div className="video-popup-close" onClick={handleCloseVideoPopup}>
+            ×
+          </div>
+          {activeVideo && (
+            <video
+              className="video-popup-video"
+              controls
+              autoPlay
+              poster={activeVideo.poster}
+              src={activeVideo.src}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
