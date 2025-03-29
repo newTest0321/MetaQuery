@@ -3,9 +3,149 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Cursor Styles */
+body,
+button,
+a,
+[role="button"],
+input,
+select,
+textarea,
+.netflix-button,
+.watch-button,
+.tutorial-card,
+.image-list-item,
+.logo-item {
+    cursor: none !important;
+}
+
+.cursor-dot,
+.cursor-outline {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    z-index: 9999;
+    will-change: transform, width, height, opacity, border-radius;
+    transform-origin: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cursor-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #c4ff3e;
+    transform: translate(-50%, -50%);
+}
+
+.cursor-outline {
+    width: 40px;
+    height: 40px;
+    border: 2px solid rgba(196, 255, 62, 0.5);
+    transform: translate(-50%, -50%);
+}
+
+.cursor-hover {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(196, 255, 62, 0.1);
+    border-color: transparent;
+}
+
+/* Cursor image transition styles */
+.cursor-image-transform {
+    position: fixed;
+    border-radius: 12px;
+    width: 320px;
+    height: 200px;
+    opacity: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: rgba(17, 24, 39, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%) scale(1) translateZ(0);
+    transition: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    z-index: 5;
+    will-change: transform, opacity, background-image;
+    mix-blend-mode: normal;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.cursor-image-transform.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateZ(0);
+    transition: opacity 0.05s linear;
+}
+
+.cursor-image-transform.cursor-dot {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1) translateZ(0);
+    transition: opacity 0.05s linear;
+}
+
+.cursor-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+}
+
+/* Image hover area styles */
+.image-hover-area {
+    position: relative;
+    overflow: hidden;
+    min-height: 300px;
+    cursor: none;
+}
+
+.image-hover-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.image-hover-area:hover::before {
+    opacity: 0.8;
+}
+
+/* Hide cursor on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .cursor-dot,
+    .cursor-outline {
+        display: none;
+    }
+    body,
+    button,
+    a,
+    [role="button"],
+    input,
+    select,
+    textarea,
+    .netflix-button,
+    .watch-button,
+    .tutorial-card,
+    .image-list-item,
+    .logo-item {
+        cursor: auto !important;
+    }
+}
+
 .animated-bg {
     background: linear-gradient(-45deg, #050c18, #0b1725, #101c29, #0d1924);
-    /* background: linear-gradient(-45deg, #050c18, #0b1725, #192b3d, #0d1924); */
     background-size: 400% 400%;
     animation: gradientAnimation 10s ease infinite;
 }
@@ -16,3 +156,1187 @@
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
+
+/* Fade-in blur effect */
+.blur-section {
+    opacity: 0;
+    animation: fadeInBlur 2s ease forwards;
+    position: relative;
+    z-index: 2;
+    backdrop-filter: blur(8px);
+}
+
+.blur-section:nth-child(1) { animation-delay: 0.5s; }
+.blur-section:nth-child(2) { animation-delay: 1s; }
+.blur-section:nth-child(3) { animation-delay: 1.5s; }
+
+@keyframes fadeInBlur {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Ensure particles remain interactive */
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+#particles-js canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* Content sections with blur */
+.content-section {
+    position: relative;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background-color 0.3s ease;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+}
+
+.content-section:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Ensure text and interactive elements remain clickable */
+.text-content, a, button {
+    position: relative;
+    z-index: 4;
+    pointer-events: auto;
+}
+
+/* Fixed background container */
+.fixed-bg-container {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.fixed-bg-container > * {
+    pointer-events: none;
+}
+
+/* Main content wrapper */
+.main-content {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+/* Navbar specific styling */
+nav {
+    z-index: 5;
+    pointer-events: auto;
+    backdrop-filter: blur(8px);
+}
+
+/* Ensure interactive elements remain clickable */
+.main-content a, 
+.main-content button, 
+.main-content [role="button"],
+.main-content input,
+.main-content select,
+.main-content textarea {
+    pointer-events: auto;
+}
+
+/* Add a wrapper for interactive content */
+.interactive-content {
+    position: relative;
+    z-index: 4;
+    pointer-events: auto;
+}
+
+/* Hero section specific styling */
+.hero-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+    width: 100%;
+}
+
+.hero-content {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+    padding-top: 4rem;
+}
+
+.hero-content h1 {
+    max-width: 1000px;
+    margin: 0 auto;
+    line-height: 1.2;
+}
+
+.hero-content p {
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.hero-button {
+    margin-top: 2rem;
+    position: relative;
+    z-index: 4;
+}
+
+/* Logo Scroll Section Styles */
+.logo-scroll-section {
+    width: 100%;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(4px);
+    position: relative;
+    z-index: 2;
+    padding: 5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo-scroll-container {
+    width: 100%;
+    position: relative;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.logo-scroll-heading {
+    font-size: 3rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 4rem;
+    background: linear-gradient(to right, #60A5FA, #7C3AED, #4F46E5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    letter-spacing: -0.02em;
+}
+
+.logo-scroll-heading.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.logo-scroll-track {
+    display: flex;
+    width: fit-content;
+    opacity: 0;
+    transform: translateX(0);
+    transition: opacity 0.5s ease-out;
+}
+
+.logo-scroll-track.visible {
+    opacity: 1;
+    transform: translateX(0);
+    animation: 
+        initialScroll 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards,
+        smoothScroll 20s linear infinite 1.2s;
+}
+
+.logo-scroll-content {
+    display: flex;
+    align-items: center;
+    gap: 80px;
+    padding: 0 60px;
+    will-change: transform;
+}
+
+.logo-item {
+    flex-shrink: 0;
+    width: 280px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.85;
+    transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    position: relative;
+    will-change: transform, opacity;
+    padding: 15px;
+}
+
+.logo-item::after {
+    content: '';
+    position: absolute;
+    inset: -30px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.logo-item:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.logo-item:hover::after {
+    opacity: 1;
+}
+
+.logo-item img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    will-change: transform;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.logo-item:hover img {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
+}
+
+@keyframes initialScroll {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes smoothScroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* Add hover pause effect with smooth transition */
+.logo-scroll-container:hover .logo-scroll-track {
+    animation-play-state: paused;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .logo-scroll-heading {
+        font-size: 2.25rem;
+        margin-bottom: 2rem;
+    }
+    
+    .logo-scroll-content {
+        gap: 60px;
+        padding: 0 40px;
+    }
+    
+    .logo-item {
+        width: 220px;
+        height: 110px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-scroll-content {
+        gap: 40px;
+        padding: 0 30px;
+    }
+    
+    .logo-item {
+        width: 180px;
+        height: 90px;
+    }
+}
+
+/* Image list section styles */
+.image-list-section {
+    padding: 6rem 0;
+    position: relative;
+    z-index: 2;
+}
+
+.image-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+}
+
+.image-list-item {
+    position: relative;
+    padding: 3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: none !important;
+    overflow: hidden;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease;
+    pointer-events: auto;
+    background: transparent;
+    will-change: background-color, padding-left;
+}
+
+.image-list-item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding-left: 4rem;
+    transition: background-color 0.3s ease, padding-left 0.3s ease;
+}
+
+.image-list-content {
+    position: relative;
+    z-index: 4;
+    pointer-events: none;
+    max-width: 800px;
+    transition: transform 0.3s ease;
+    will-change: transform;
+}
+
+.image-list-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0.9;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+}
+
+.image-list-description {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 600px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Ensure smooth transitions */
+.cursor-outline {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    mix-blend-mode: normal;
+    pointer-events: none;
+    will-change: transform, width, height;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.cursor-dot {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    mix-blend-mode: normal;
+    pointer-events: none;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+/* Hover effect for list items */
+.image-list-item:hover .image-list-title {
+    transform: translateX(20px) translateZ(0);
+    opacity: 1;
+}
+
+.image-list-item:hover .image-list-description {
+    transform: translateX(20px) translateZ(0);
+    opacity: 0.85;
+}
+
+/* Image hover area styles */
+.image-hover-area {
+    position: relative;
+    overflow: hidden;
+    min-height: 300px;
+    cursor: none;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.image-hover-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.image-hover-area:hover::before {
+    opacity: 0.6;
+}
+
+/* Performance optimizations */
+.image-list-item,
+.image-list-content,
+.cursor-image-transform,
+.cursor-outline,
+.cursor-dot {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+}
+
+/* Ensure proper stacking context */
+.main-content {
+    position: relative;
+    z-index: 2;
+    transform: translateZ(0);
+}
+
+.image-list {
+    position: relative;
+    z-index: 2;
+    transform: translateZ(0);
+}
+
+/* Eye Cursor Styles */
+.cursor-dot.eye-transform {
+  background-color: #000;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 11;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.cursor-outline.eye-transform {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at center, 
+    rgba(159, 255, 47, 0.8) 0%,
+    rgba(159, 255, 47, 0.4) 60%,
+    rgba(159, 255, 47, 0) 100%
+  );
+  border: none;
+  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  position: fixed;
+  transform: translate(-50%, -50%) scale(1);
+  mix-blend-mode: screen;
+}
+
+.cursor-outline.eye-transform.active {
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%) scale(1.2);
+  background: radial-gradient(circle at center, 
+    rgba(159, 255, 47, 0.9) 0%,
+    rgba(159, 255, 47, 0.5) 40%,
+    rgba(159, 255, 47, 0) 100%
+  );
+  animation: pulseEye 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pulseEye {
+  0% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+.tutorial-cursor-area {
+  position: relative;
+  cursor: none !important;
+}
+
+.tutorial-cursor-area * {
+  cursor: none !important;
+}
+
+.tutorial-cursor-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(1px);
+}
+
+/* Tutorial Section Styles */
+.tutorial-section {
+  position: relative;
+  background: rgba(13, 16, 25, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.tutorial-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(96, 165, 250, 0.1), transparent 70%),
+              radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.tutorial-video-container {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(17, 24, 39, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutorial-video-container video {
+  transition: opacity 0.6s ease-in-out, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutorial-video-container.switching video {
+  opacity: 0;
+  transform: scale(0.98) translateY(10px);
+}
+
+.tutorial-video-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,
+    rgba(17, 24, 39, 0.95) 0%,
+    rgba(17, 24, 39, 0.7) 30%,
+    rgba(17, 24, 39, 0) 60%
+  );
+  pointer-events: none;
+}
+
+.tutorial-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.tutorial-card:hover {
+  transform: translateX(8px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.tutorial-card.active {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.tutorial-card.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: linear-gradient(to bottom, #60A5FA, #818CF8);
+  border-radius: 2px;
+  animation: activeIndicator 0.3s ease forwards;
+}
+
+.tutorial-card .card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.tutorial-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, 
+    rgba(96, 165, 250, 0) 0%,
+    rgba(139, 92, 246, 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tutorial-card:hover .tutorial-gradient-overlay {
+  opacity: 1;
+}
+
+.watch-button {
+  position: relative;
+  background: linear-gradient(to right, #3B82F6, #8B5CF6);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.watch-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.watch-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 50%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.watch-button:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.tutorial-video-info {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutorial-video-info.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@keyframes activeIndicator {
+  from {
+    height: 0;
+  }
+  to {
+    height: 70%;
+  }
+}
+
+/* Netflix-style Section */
+.netflix-section {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  padding: 5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(13, 16, 25, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.netflix-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(96, 165, 250, 0.05), transparent 70%),
+              radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 70%);
+  pointer-events: none;
+}
+
+.netflix-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  position: relative;
+  z-index: 3;
+  padding: 0 2rem;
+}
+
+.netflix-text {
+  flex: 1;
+}
+
+.netflix-title {
+  font-size: 3rem;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  font-weight: 900;
+  background: linear-gradient(to right, #60A5FA, #7C3AED);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.netflix-subtitle {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+}
+
+.netflix-image {
+  flex: 1;
+  position: relative;
+  z-index: 4;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.netflix-image video {
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 5;
+  filter: drop-shadow(0 8px 24px rgba(96, 165, 250, 0.2));
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.netflix-image:hover video {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(96, 165, 250, 0.3),
+              0 0 60px rgba(139, 92, 246, 0.2);
+  filter: drop-shadow(0 12px 32px rgba(96, 165, 250, 0.4));
+}
+
+.netflix-button {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(to right, rgba(96, 165, 250, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.netflix-button:hover {
+  background: linear-gradient(to right, rgba(96, 165, 250, 0.3), rgba(139, 92, 246, 0.3));
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: translateY(-2px);
+}
+
+.netflix-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.4) 0%, transparent 50%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.netflix-button:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .netflix-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
+
+  .netflix-title {
+    font-size: 2.5rem;
+  }
+
+  .netflix-subtitle {
+    font-size: 1.25rem;
+  }
+
+  .netflix-button {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .netflix-section {
+    padding: 3rem 0;
+  }
+
+  .netflix-title {
+    font-size: 2rem;
+  }
+
+  .netflix-subtitle {
+    font-size: 1.1rem;
+  }
+}
+
+/* Video Popup Modal */
+.video-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.video-popup-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.video-popup-content {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.video-popup-overlay.active .video-popup-content {
+  transform: scale(1);
+}
+
+.video-popup-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  z-index: 10000;
+}
+
+.video-popup-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.video-popup-video {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Ensure cursor remains visible in popup */
+.video-popup-overlay.active .cursor-dot,
+.video-popup-overlay.active .cursor-outline {
+  display: block;
+  z-index: 10000;
+}
+
+/* Make video container clickable */
+.netflix-image {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 4;
+}
+
+.netflix-image:hover {
+  transform: scale(1.02);
+}
+
+.netflix-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+.netflix-image:hover::after {
+  opacity: 1;
+}
+
+/* FAQ Section Styles */
+.faq-section {
+  padding: 6rem 0;
+  position: relative;
+  z-index: 2;
+  background: rgba(13, 16, 25, 0.3);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.faq-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.faq-header {
+  margin-bottom: 4rem;
+  text-align: center;
+}
+
+.faq-label {
+  color: #60A5FA;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.faq-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  background: linear-gradient(to right, #60A5FA, #7C3AED);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.faq-content {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 4rem;
+}
+
+.faq-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.faq-category-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.faq-category-btn:hover {
+  color: #60A5FA;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.faq-category-btn.active {
+  color: #60A5FA;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.category-icon {
+  font-size: 1.25rem;
+  opacity: 0.8;
+}
+
+.faq-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.faq-item {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.faq-question:hover {
+  color: #60A5FA;
+}
+
+.faq-question.active {
+  color: #60A5FA;
+}
+
+.faq-toggle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.faq-question.active .faq-toggle {
+  color: #60A5FA;
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  transition: all 0.3s ease;
+  padding: 0 1.5rem;
+}
+
+.faq-answer.active {
+  max-height: 1000px;
+  padding: 0 1.5rem 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .faq-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .faq-categories {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .faq-categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .faq-category-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .faq-section {
+    padding: 3rem 0;
+  }
+
+  .faq-title {
+    font-size: 2rem;
+  }
+
+  .faq-question {
+    padding: 1.25rem;
+  }
+}
+
+/* Performance optimizations for image switching */
+.cursor-image-transform {
+    transform: translate3d(-50%, -50%, 0) scale(1);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000;
+    -webkit-perspective: 1000;
+    transform-style: preserve-3d;
+    will-change: transform, opacity, background-image;
+}
+
+/* Prevent cursor from showing during transitions */
+.image-list-section {
+    cursor: none !important;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Optimize image loading */
+.cursor-image-transform {
+    content-visibility: auto;
+    contain: paint style layout;
+}
+
+/* Hover state optimizations */
+.image-list-item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding-left: 4rem;
+    transition: background-color 0.3s ease, padding-left 0.3s ease;
+}
+
+.image-list-item:hover .image-list-title {
+    transform: translateX(20px) translateZ(0);
+    opacity: 1;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.image-list-item:hover .image-list-description {
+    transform: translateX(20px) translateZ(0);
+    opacity: 0.85;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+} 
