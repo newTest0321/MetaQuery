@@ -337,11 +337,41 @@ export default function S3Viewer() {
   };
 
   const handleFileClick = async (fileKey) => {
-    if (!isJsonViewerEnabled) {
-      return;
-    }
-
     try {
+      // Check if file is a Parquet file
+      if (fileKey.endsWith('.parquet')) {
+        console.log('Handling Parquet file:', fileKey);
+        const metadataResponse = await axios.get(
+          `http://localhost:8000/s3/get-metadata?public_url=${publicUrl}&file_key=${fileKey}`
+        );
+        
+        console.log('Received Parquet metadata:', metadataResponse.data);
+        
+        const newState = {
+          type: 'file_view',
+          showCards: false,
+          isJsonViewerEnabled: true,
+          currentPath: fileKey,
+          fileContent: metadataResponse.data,
+          fileType: 'json',
+          activeFilter: null
+        };
+        
+        addToHistory(newState);
+        setShowCards(false);
+        setIsJsonViewerEnabled(true);
+        setFileType('json');
+        setFileContent(metadataResponse.data);
+        setIsMetadataOpened(true);
+        return;
+      }
+
+      // For non-Parquet files, check if JSON viewer is enabled
+      if (!isJsonViewerEnabled) {
+        return;
+      }
+
+      // Handle other file types
       const response = await axios.get(
         `http://localhost:8000/s3/get-file?public_url=${publicUrl}&file_key=${fileKey}`
       );
@@ -538,15 +568,34 @@ export default function S3Viewer() {
   };
 
   const extractMetadata = (content, filterType) => {
-    if (!content || typeof content !== 'object') return [];
+    console.log('Extracting metadata:', { filterType, content });
+    
+    if (!content || typeof content !== 'object') {
+      console.log('Invalid content:', content);
+      return [];
+    }
 
     switch (filterType) {
       case 'schema':
         try {
-          // First try to find schemas array
+          // Handle Parquet schema
+          if (content.schema && Array.isArray(content.schema)) {
+            console.log('Processing Parquet schema');
+            return content.schema.map(field => ({
+              id: field.name || 'N/A',
+              name: field.name || 'unnamed',
+              type: field.type || 'unknown',
+              nullable: field.nullable !== undefined ? String(field.nullable) : 'N/A',
+              metadata: JSON.stringify({
+                ...field.metadata,
+                statistics: field.statistics || {}
+              })
+            }));
+          }
+
+          // Handle other schema formats
           let schemas = content.schemas;
           if (schemas && Array.isArray(schemas)) {
-            // Get fields from the first schema
             let fields = schemas[0]?.fields;
             if (Array.isArray(fields)) {
               return fields.map(field => ({
@@ -559,7 +608,6 @@ export default function S3Viewer() {
             }
           }
 
-          // If no direct schemas array, try to find schema-like data
           const schemaData = findInObject(content, 'schema');
           return schemaData.flatMap(schema => {
             let fields = [];
@@ -589,10 +637,21 @@ export default function S3Viewer() {
 
       case 'snapshot':
         try {
-          // First try direct snapshots array
+          // Handle Parquet snapshots (row groups)
+          if (content.snapshots && Array.isArray(content.snapshots)) {
+            return content.snapshots.map(snap => ({
+              'snapshot-id': snap['snapshot-id'] || 'unknown',
+              'timestamp-ms': snap['timestamp-ms'] || 'N/A',
+              'manifest-list': snap['manifest-list'] || 'N/A',
+              size: snap.size || 'N/A',
+              'num-rows': snap['num-rows'] || 'N/A',
+              compression: snap.compression || 'N/A'
+            }));
+          }
+
+          // Handle other snapshot formats
           let snapshots = content.snapshots;
           if (!snapshots) {
-            // Try to find snapshot data
             snapshots = findInObject(content, 'snapshot');
           }
 
@@ -615,6 +674,17 @@ export default function S3Viewer() {
 
       case 'partition':
         try {
+          // Handle Parquet partitions
+          if (content.partitions && Array.isArray(content.partitions)) {
+            return content.partitions.map(p => ({
+              field: p.field || 'unnamed',
+              transform: p.transform || 'none',
+              source: p.source || 'default',
+              granularity: p.granularity || 'N/A'
+            }));
+          }
+
+          // Handle other partition formats
           let partitioning = content.partitioning || findInObject(content, 'partition');
           
           if (!Array.isArray(partitioning)) {

@@ -9,3 +9,4 @@ jwt
 motor
 passlib
 pyjwt
+pyarrow==15.0.0
