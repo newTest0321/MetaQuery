@@ -1,0 +1,32 @@
+{
+    "format-version": 1,
+    "table-uuid": "123e4567-e89b-12d3-a456-426614174000",
+    "location": "s3://my-bucket/iceberg-table/",
+    "last-updated-ms": 1711500000000,
+    "schemas": [
+        {
+            "schema-id": 1,
+            "fields": [
+                {
+                    "id": 1,
+                    "name": "id",
+                    "type": "int",
+                    "required": true
+                },
+                {
+                    "id": 2,
+                    "name": "name",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "current-schema-id": 1,
+    "snapshots": [
+        {
+            "snapshot-id": 1001,
+            "timestamp-ms": 1711500000000,
+            "manifest-list": "s3://my-bucket/iceberg-table/metadata/manifest1.avro"
+        }
+    ]
+}

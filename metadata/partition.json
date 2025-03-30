@@ -1,0 +1,27 @@
+{
+    "format-version": 2,
+    "table-uuid": "123e4567-e89b-12d3-a456-426614174000",
+    "location": "s3://your-bucket/path/to/table",
+    "last-updated-ms": 1711819200000,
+    "schema": {
+      "schema-id": 1,
+      "fields": [
+        { "id": 1, "name": "id", "type": "long", "required": true },
+        { "id": 2, "name": "name", "type": "string" },
+        { "id": 3, "name": "timestamp", "type": "timestamp" },
+        { "id": 4, "name": "category", "type": "string" }
+      ]
+    },
+    "partition-spec": [
+      { "field-id": 3, "transform": "day", "details": { "type": "time-based", "example": "2025-03-30" } },
+      { "field-id": 4, "transform": "identity", "details": { "type": "categorical", "example": "electronics" } }
+    ],
+    "snapshots": [
+      {
+        "snapshot-id": 1001,
+        "timestamp-ms": 1711819200000,
+        "manifest-list": "s3://your-bucket/path/to/manifests/manifest1.avro"
+      }
+    ]
+  }
+  
