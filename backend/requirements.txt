@@ -1,6 +1,6 @@
-fastapi
-boto3
-uvicorn
+fastapi==0.104.1
+boto3==1.29.3
+uvicorn==0.24.0
 pymongo[ssl]
 pydantic[email]
 python-dotenv
@@ -9,4 +9,6 @@ jwt
 motor
 passlib
 pyjwt
-pyarrow==15.0.0
+pyarrow==14.0.1
+psutil==5.9.6
+avro-python3==1.11.3

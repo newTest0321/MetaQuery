@@ -11,6 +11,8 @@ from datetime import datetime
 import os
 import pyarrow.parquet as pq
 import io
+import avro.schema
+import avro.io
 
 s3_router = APIRouter(prefix="/s3", tags=["S3 Storage"])
 
@@ -37,27 +39,102 @@ async def list_public_bucket(public_url: str, folder: str = ""):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error listing bucket contents: {str(e)}")
 
+def get_file_type(file_key: str) -> str:
+    """Determine file type from extension"""
+    ext = file_key.split('.')[-1].lower()
+    if ext == 'json':
+        return 'json'
+    elif ext == 'parquet':
+        return 'parquet'
+    elif ext == 'avro':
+        return 'avro'
+    return 'text'
+
+def read_avro_file(content: bytes) -> dict:
+    """Read and parse Avro file content"""
+    try:
+        # Create a binary stream from the content
+        stream = io.BytesIO(content)
+        
+        # Read the Avro schema from the file
+        reader = avro.io.DatumReader()
+        decoder = avro.io.BinaryDecoder(stream)
+        
+        # Read all records
+        records = []
+        while True:
+            try:
+                record = reader.read(decoder)
+                records.append(record)
+            except:
+                break
+                
+        return {
+            "schema": str(reader.writer_schema),
+            "records": records,
+            "record_count": len(records)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading Avro file: {str(e)}")
+
 @s3_router.get("/get-file")
 async def get_file(public_url: str, file_key: str):
     try:
-        parsed_url = urlparse(public_url)
-        bucket_name = parsed_url.netloc.split(".")[0]
-
-        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
-
-        # Get the object from S3
+        # Create S3 client
+        s3 = boto3.client('s3')
+        
+        # Get the bucket name from the public URL
+        bucket_name = public_url.split('/')[2].split('.')[0]
+        
+        # Get the file from S3
         response = s3.get_object(Bucket=bucket_name, Key=file_key)
-        content = response["Body"].read()
-        mime_type, _ = mimetypes.guess_type(file_key)
-
-        if mime_type == "application/json":
-            return {"file_key": file_key, "content": content.decode("utf-8"), "type": "json"}
-        elif mime_type and mime_type.startswith("text"):
-            return {"file_key": file_key, "content": content.decode("utf-8"), "type": "text"}
+        content = response['Body'].read()
+        
+        # Determine file type
+        file_type = get_file_type(file_key)
+        
+        if file_type == 'json':
+            # Parse JSON content
+            try:
+                json_content = json.loads(content.decode('utf-8'))
+                return {
+                    "content": json.dumps(json_content, indent=2),
+                    "type": "json"
+                }
+            except json.JSONDecodeError:
+                return {
+                    "content": content.decode('utf-8'),
+                    "type": "text"
+                }
+        elif file_type == 'parquet':
+            # Read Parquet file
+            try:
+                table = pq.read_table(io.BytesIO(content))
+                return {
+                    "content": table.to_pandas().to_json(orient='records', indent=2),
+                    "type": "json"
+                }
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error reading Parquet file: {str(e)}")
+        elif file_type == 'avro':
+            # Read Avro file
+            try:
+                avro_content = read_avro_file(content)
+                return {
+                    "content": json.dumps(avro_content, indent=2),
+                    "type": "json"
+                }
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error reading Avro file: {str(e)}")
         else:
-            return {"file_key": file_key, "type": "binary"}
+            # Return as text
+            return {
+                "content": content.decode('utf-8'),
+                "type": "text"
+            }
+            
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error fetching file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # 🆕 NEW: Fetch Metadata (Schema, Partitions, Snapshots)
 @s3_router.get("/get-metadata")

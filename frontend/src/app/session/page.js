@@ -1315,11 +1315,25 @@ export default function S3Viewer() {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = () => {
+        let content = reader.result;
+        // Try to parse and format JSON or Avro if it's a JSON or Avro file
+        if (file.name.endsWith('.json')) {
+          try {
+            const jsonObj = JSON.parse(content);
+            content = JSON.stringify(jsonObj, null, 2);
+          } catch (e) {
+            console.error('Error parsing JSON:', e);
+          }
+        } else if (file.name.endsWith('.avro')) {
+          // For Avro files, we'll let the backend handle the parsing
+          content = "Loading Avro file...";
+        }
         const newFile = {
           id: Math.random().toString(36).substring(7),
           name: file.name,
-          content: reader.result,
-          timestamp: new Date().toISOString()
+          content: content,
+          timestamp: new Date().toISOString(),
+          type: file.name.endsWith('.avro') ? 'avro' : file.name.endsWith('.json') ? 'json' : 'text'
         };
         setVersionFiles(prev => [...prev, newFile]);
       };
@@ -1336,17 +1350,31 @@ export default function S3Viewer() {
       Array.from(event.dataTransfer.files).forEach(file => {
         const reader = new FileReader();
         reader.onload = () => {
+          let content = reader.result;
+          // Try to parse and format JSON or Avro if it's a JSON or Avro file
+          if (file.name.endsWith('.json')) {
+            try {
+              const jsonObj = JSON.parse(content);
+              content = JSON.stringify(jsonObj, null, 2);
+            } catch (e) {
+              console.error('Error parsing JSON:', e);
+            }
+          } else if (file.name.endsWith('.avro')) {
+            // For Avro files, we'll let the backend handle the parsing
+            content = "Loading Avro file...";
+          }
           const newFile = {
             id: Math.random().toString(36).substring(7),
             name: file.name,
-            content: reader.result,
-            timestamp: new Date().toISOString()
+            content: content,
+            timestamp: new Date().toISOString(),
+            type: file.name.endsWith('.avro') ? 'avro' : file.name.endsWith('.json') ? 'json' : 'text'
           };
           setVersionFiles(prev => [...prev, newFile]);
         };
         reader.readAsText(file);
       });
-    } 
+    }
     // Handle files dragged from the sidebar
     else {
       const fileKey = event.dataTransfer.getData('text/plain');
@@ -1356,11 +1384,22 @@ export default function S3Viewer() {
             `http://localhost:8000/s3/get-file?public_url=${publicUrl}&file_key=${fileKey}`
           );
           const { content, type } = response.data;
+          let formattedContent = content;
+          // Format JSON content if it's a JSON file
+          if (type === 'json') {
+            try {
+              const jsonObj = JSON.parse(content);
+              formattedContent = JSON.stringify(jsonObj, null, 2);
+            } catch (e) {
+              console.error('Error parsing JSON:', e);
+            }
+          }
           const newFile = {
             id: Math.random().toString(36).substring(7),
             name: fileKey.split('/').pop(),
-            content: type === 'json' ? JSON.stringify(JSON.parse(content), null, 2) : content,
-            timestamp: new Date().toISOString()
+            content: formattedContent,
+            timestamp: new Date().toISOString(),
+            type: type
           };
           setVersionFiles(prev => [...prev, newFile]);
         } catch (error) {
